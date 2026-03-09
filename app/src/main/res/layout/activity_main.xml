@@ -29,6 +29,63 @@
             android:textSize="16sp" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/xiaomiCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="24dp"
+            app:strokeColor="#FFB74D"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/xiaomiTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Xiaomi/HyperOS Optimierung"
+                    android:textColor="#FFB74D"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Für HyperOS sind zusätzliche Berechtigungen nötig, damit das Overlay im Hintergrund und auf dem Lockscreen erscheint."
+                    android:textColor="@color/bl_text_secondary" />
+
+                <Button
+                    android:id="@+id/openAutostartButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Autostart verwalten" />
+
+                <Button
+                    android:id="@+id/openOtherPermissionsButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Display pop-up windows (Hintergrund)" />
+
+                <Button
+                    android:id="@+id/openBatteryOptimizationButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Energiesparmodus: Keine Beschränkung" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"

@@ -4,7 +4,9 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import de.lootz.borderline.core.DeviceCompatibility
 import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
 import de.lootz.borderline.databinding.ActivityMainBinding
@@ -21,6 +23,8 @@ class MainActivity : AppCompatActivity() {
         modulePrefs = ModulePrefs(this)
 
         setupSwitches()
+        setupXiaomiTweaks()
+        
         binding.openAccessibilitySettingsButton.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -49,6 +53,28 @@ class MainActivity : AppCompatActivity() {
         binding.shortcutsSwitch.setOnCheckedChangeListener { _, checked ->
             modulePrefs.setEnabled(ModuleId.SHORTCUTS, checked && modulePrefs.isEnabled(ModuleId.OVERLAY))
             renderState()
+        }
+    }
+
+    private fun setupXiaomiTweaks() {
+        if (DeviceCompatibility.isXiaomi()) {
+            binding.xiaomiCard.visibility = View.VISIBLE
+            val hyperOsVersion = DeviceCompatibility.getHyperOSVersion()
+            if (hyperOsVersion != null) {
+                binding.xiaomiTitle.text = "HyperOS ($hyperOsVersion) Optimierung"
+            }
+
+            binding.openAutostartButton.setOnClickListener {
+                DeviceCompatibility.openXiaomiAutoStartSettings(this)
+            }
+            binding.openOtherPermissionsButton.setOnClickListener {
+                DeviceCompatibility.openXiaomiOtherPermissions(this)
+            }
+            binding.openBatteryOptimizationButton.setOnClickListener {
+                DeviceCompatibility.openBatteryOptimizationSettings(this)
+            }
+        } else {
+            binding.xiaomiCard.visibility = View.GONE
         }
     }
 
