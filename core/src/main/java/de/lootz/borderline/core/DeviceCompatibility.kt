@@ -1,6 +1,5 @@
 package de.lootz.borderline.core
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -16,7 +15,11 @@ object DeviceCompatibility {
                 Build.BRAND.equals("POCO", ignoreCase = true)
     }
 
-    @SuppressLint("DiscouragedPrivateApi")
+    /**
+     * Reads the MIUI/HyperOS version name from system properties.
+     * Uses a suppression for internal API access via reflection since no public API exists for this property.
+     */
+    @Suppress("PrivateApi", "DiscouragedPrivateApi")
     fun getHyperOSVersion(): String? {
         return try {
             val c = Class.forName("android.os.SystemProperties")
