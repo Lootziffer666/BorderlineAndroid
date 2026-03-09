@@ -10,9 +10,9 @@
     <string name="wizard_welcome_body">Im Alltag soll Borderline kaum sichtbar sein. Dieses Onboarding führt nur durch die Voraussetzungen, damit Overlay und Quick Actions später einfach da sind.</string>
 
     <string name="wizard_accessibility_title">Accessibility ist die Voraussetzung</string>
-    <string name="wizard_accessibility_body">Ohne den Accessibility-Service kann Borderline weder Kontext sehen noch das Overlay verlässlich anzeigen.</string>
+    <string name="wizard_accessibility_body">Öffne „Accessibility“ und aktiviere in „Heruntergeladene Apps“ den Eintrag „Borderline“. Ohne diesen Service kann Borderline weder Kontext sehen noch das Overlay verlässlich anzeigen.</string>
     <string name="wizard_accessibility_ready_hint">Accessibility ist aktiv. Du kannst mit der Einrichtung fortfahren.</string>
-    <string name="wizard_accessibility_missing_hint">Aktiviere zuerst den Service. Danach wird Borderline im Alltag erst wirklich lebendig.</string>
+    <string name="wizard_accessibility_missing_hint">Wenn „Borderline“ nicht sofort sichtbar ist: in „Heruntergeladene Apps“ nach unten scrollen und den Eintrag öffnen. Dort den Schalter auf „An“ stellen.</string>
 
     <string name="wizard_modules_title">Schnellzugriff wählen</string>
     <string name="wizard_modules_body">Hier entscheidest du nur, ob Borderline das Overlay und die Quick Actions bereithält. Das ist keine Hauptoberfläche, sondern nur die Startkonfiguration.</string>
@@ -34,6 +34,11 @@
     <string name="action_back">Zurück</string>
     <string name="restart_setup">Einrichtung erneut starten</string>
     <string name="open_accessibility_settings">Accessibility öffnen</string>
+
+    <string name="hyperos_accessibility_guide_title">HyperOS: Mache das, dann das</string>
+    <string name="hyperos_accessibility_step_one">1) Tippe auf „Heruntergeladene Apps“. Falls nötig: ganz nach unten scrollen.</string>
+    <string name="hyperos_accessibility_step_two">2) Öffne „Borderline“ und schalte den Service auf „An“. Danach mit Zurück wieder zu Borderline.</string>
+    <string name="hyperos_accessibility_open_now">Jetzt Accessibility öffnen</string>
 
     <!-- Xiaomi / HyperOS -->
     <string name="xiaomi_optimization_title">Xiaomi / HyperOS Hilfe</string>

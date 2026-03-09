@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.lootz.borderline.core.DeviceCompatibility
 import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
@@ -307,7 +308,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAccessibilitySettings() {
+        if (DeviceCompatibility.isXiaomi()) {
+            showHyperOsAccessibilityGuide()
+            return
+        }
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    private fun showHyperOsAccessibilityGuide() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.hyperos_accessibility_guide_title)
+            .setView(R.layout.dialog_hyperos_accessibility_guide)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.hyperos_accessibility_open_now) { _, _ ->
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+            .show()
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
