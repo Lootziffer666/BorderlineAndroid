@@ -1,5 +1,6 @@
 package de.lootz.borderline.core
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -15,13 +16,14 @@ object DeviceCompatibility {
                 Build.BRAND.equals("POCO", ignoreCase = true)
     }
 
+    @SuppressLint("DiscouragedPrivateApi")
     fun getHyperOSVersion(): String? {
         return try {
             val c = Class.forName("android.os.SystemProperties")
             val get = c.getMethod("get", String::class.java)
             val version = get.invoke(c, "ro.miui.ui.version.name") as String
             version.ifEmpty { null }
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -32,7 +34,7 @@ object DeviceCompatibility {
                 setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
             }
             context.startActivity(intent)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
             openAppDetails(context)
         }
     }
@@ -44,7 +46,7 @@ object DeviceCompatibility {
                 putExtra("extra_pkgname", context.packageName)
             }
             context.startActivity(intent)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
             openAppDetails(context)
         }
     }
@@ -53,7 +55,7 @@ object DeviceCompatibility {
         try {
             val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
             context.startActivity(intent)
-        } catch (ignored: Exception) {
+        } catch (_: Exception) {
             openAppDetails(context)
         }
     }
