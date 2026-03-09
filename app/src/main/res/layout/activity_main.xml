@@ -112,7 +112,7 @@
                 android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Material3.CardView.Surface"
+                style="@style/Widget.Material3.CardView.Filled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp">
@@ -159,7 +159,7 @@
                 android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Material3.CardView.Surface"
+                style="@style/Widget.Material3.CardView.Filled"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp">
