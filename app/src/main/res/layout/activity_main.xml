@@ -1,215 +1,221 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_root_gradient"
-    android:fillViewport="true">
+    android:background="?android:attr/colorBackground">
 
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
 
-        <TextView
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/app_name"
+            app:titleCentered="false"
+            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textColor="@color/bl_text_primary"
-            android:textSize="30sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/app_description"
-            android:textColor="@color/bl_text_secondary"
-            android:textSize="16sp" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/xiaomiCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:visibility="gone"
-            app:cardBackgroundColor="@android:color/transparent"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="#FFB74D"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="24dp"
+                android:text="@string/app_description"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
 
-                <TextView
-                    android:id="@+id/xiaomiTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_optimization_title"
-                    android:textColor="#FFB74D"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/xiaomi_optimization_desc"
-                    android:textColor="@color/bl_text_secondary" />
-
-                <Button
-                    android:id="@+id/openAutostartButton"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/xiaomi_autostart_btn" />
-
-                <Button
-                    android:id="@+id/openOtherPermissionsButton"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_popup_btn" />
-
-                <Button
-                    android:id="@+id/openBatteryOptimizationButton"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_battery_btn" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_glass_card"
-            app:cardBackgroundColor="@android:color/transparent"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/bl_surface_line"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
+            <!-- Xiaomi / HyperOS Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/xiaomiCard"
+                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorTertiaryContainer"
+                app:contentPadding="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/modules_title"
-                    android:textColor="@color/bl_text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/modules_desc"
-                    android:textColor="@color/bl_text_secondary" />
+                    android:orientation="vertical">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/overlaySwitch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/module_overlay_label" />
+                    <TextView
+                        android:id="@+id/xiaomiTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/xiaomi_optimization_title"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textColor="?attr/colorOnTertiaryContainer" />
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/shortcutsSwitch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/module_shortcuts_label" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/xiaomi_optimization_desc"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnTertiaryContainer" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@android:color/transparent"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/bl_surface_line"
-            app:strokeWidth="1dp">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openAutostartButton"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/xiaomi_autostart_btn"
+                        android:textColor="?attr/colorOnTertiaryContainer"
+                        android:textAlignment="viewStart" />
 
-            <LinearLayout
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openOtherPermissionsButton"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/xiaomi_popup_btn"
+                        android:textColor="?attr/colorOnTertiaryContainer"
+                        android:textAlignment="viewStart" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openBatteryOptimizationButton"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/xiaomi_battery_btn"
+                        android:textColor="?attr/colorOnTertiaryContainer"
+                        android:textAlignment="viewStart" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Module Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/modules_title"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="?attr/colorPrimary" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Material3.CardView.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/status_title"
-                    android:textColor="@color/bl_text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/accessibilityStatus"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/status_accessibility_unknown"
-                    android:textColor="@color/bl_text_primary" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/moduleStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/status_off"
-                    android:textColor="@color/bl_text_secondary" />
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/overlaySwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/module_overlay_label"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
-                <Button
-                    android:id="@+id/openAccessibilitySettingsButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/open_accessibility_settings" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/shortcutsSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/module_shortcuts_label"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@android:color/transparent"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/bl_surface_line"
-            app:strokeWidth="1dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/modules_desc"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
+            <!-- Status Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/status_title"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="?attr/colorPrimary" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Material3.CardView.Surface"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/limits_title"
-                    android:textColor="@color/bl_text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/limits_desc"
-                    android:textColor="@color/bl_text_secondary" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-    </LinearLayout>
-</ScrollView>
+                    <TextView
+                        android:id="@+id/accessibilityStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status_accessibility_unknown"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+                    <TextView
+                        android:id="@+id/moduleStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/status_off"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openAccessibilitySettingsButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/open_accessibility_settings" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Footer -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/limits_title"
+                android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+                android:textColor="?attr/colorOutline" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:paddingHorizontal="32dp"
+                android:text="@string/limits_desc"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?attr/colorOutline" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

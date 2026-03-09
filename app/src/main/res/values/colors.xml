@@ -1,10 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#5A6BFF</color>
-    <color name="bl_surface">#F2FFFFFF</color>
-    <color name="bl_surface_soft">#CCFFFFFF</color>
-    <color name="bl_surface_line">#26000000</color>
-    <color name="bl_text_primary">#111827</color>
-    <color name="bl_text_secondary">#4B5563</color>
-    <color name="bl_accent">#5A6BFF</color>
-    <color name="bl_accent_dark">#4151D6</color>
+    <color name="ic_launcher_background">#001C38</color>
+
+    <!-- Material 3 Mappings (Xiaomi 14T Pro Tones) -->
+    <color name="primary">#A8C8FF</color>
+    <color name="onPrimary">#003062</color>
+    <color name="primaryContainer">#00468A</color>
+    <color name="onPrimaryContainer">#D6E3FF</color>
+
+    <color name="secondary">#BDC7DC</color>
+    <color name="onSecondary">#283141</color>
+    <color name="secondaryContainer">#3E4758</color>
+    <color name="onSecondaryContainer">#D9E3F8</color>
+
+    <color name="tertiary">#DDBCE0</color>
+    <color name="onTertiary">#3F2844</color>
+    <color name="tertiaryContainer">#573E5C</color>
+    <color name="onTertiaryContainer">#F9D8FD</color>
+
+    <color name="error">#FFB4AB</color>
+    <color name="onError">#690005</color>
+    <color name="errorContainer">#93000A</color>
+    <color name="onErrorContainer">#FFDAD6</color>
+
+    <color name="background">#1A1C1E</color>
+    <color name="onBackground">#E2E2E6</color>
+    <color name="surface">#1A1C1E</color>
+    <color name="onSurface">#E2E2E6</color>
+    <color name="surfaceVariant">#43474E</color>
+    <color name="onSurfaceVariant">#C3C7CF</color>
+    <color name="outline">#8D9199</color>
+
+    <!-- Borderline specific -->
+    <color name="bl_accent_warning">#FFB74D</color>
 </resources>

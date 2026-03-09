@@ -1,9 +1,12 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "de.lootz.borderline"
     compileSdk = 36
 
@@ -11,8 +14,8 @@ android {
         applicationId = "de.lootz.borderline"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -30,13 +33,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+}
+
+configure<KotlinAndroidProjectExtension> {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

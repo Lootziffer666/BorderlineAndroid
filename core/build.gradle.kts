@@ -1,9 +1,12 @@
+import com.android.build.api.dsl.LibraryExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
 }
 
-android {
+configure<LibraryExtension> {
     namespace = "de.lootz.borderline.core"
     compileSdk = 36
 
@@ -26,8 +29,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
+}
+
+configure<KotlinAndroidProjectExtension> {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
