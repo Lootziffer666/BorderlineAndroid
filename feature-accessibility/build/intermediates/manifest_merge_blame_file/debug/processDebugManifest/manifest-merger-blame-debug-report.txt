@@ -3,6 +3,8 @@
 3    package="de.lootz.borderline.feature.accessibility" >
 4
 5    <uses-sdk android:minSdkVersion="28" />
+5-->INJECTED
+5-->INJECTED
 6
 7    <application>
 7-->C:\Users\Admin\Documents\GitHub\BorderlineAndroidUIv2\feature-accessibility\src\main\AndroidManifest.xml:2:5-16:19

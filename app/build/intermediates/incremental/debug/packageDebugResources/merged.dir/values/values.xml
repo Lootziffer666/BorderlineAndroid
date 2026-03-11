@@ -33,7 +33,7 @@
     <string name="hyperos_accessibility_guide_title">HyperOS: Mache das, dann das</string>
     <string name="hyperos_accessibility_open_now">Jetzt Accessibility öffnen</string>
     <string name="hyperos_accessibility_step_one">1) Tippe auf „Heruntergeladene Apps“. Falls nötig: ganz nach unten scrollen.</string>
-    <string name="hyperos_accessibility_step_two">2) Öffne „Borderline“ und schalte den Service auf „An“. Danach mit Zurück wieder zu Borderline.</string>
+    <string name="hyperos_accessibility_step_two">2) Öffne „Borderline“ und schalte den Service auf „An“. Nicht unter „Über anderen Apps anzeigen“ suchen – dort taucht Borderline absichtlich nicht auf.</string>
     <string name="limits_desc">Borderline arbeitet innerhalb der Android-Grenzen: keine Wunderautomatisierung, keine versteckte Fremdsteuerung, kein Hokuspokus ohne Rechte.</string>
     <string name="module_overlay_desc">Schwebender Einstieg am Bildschirmrand.</string>
     <string name="module_overlay_label">Overlay</string>
@@ -64,7 +64,7 @@
     <string name="status_on">an</string>
     <string name="status_title">Status</string>
     <string name="wizard_accessibility_body">Öffne „Accessibility“ und aktiviere in „Heruntergeladene Apps“ den Eintrag „Borderline“. Ohne diesen Service kann Borderline weder Kontext sehen noch das Overlay verlässlich anzeigen.</string>
-    <string name="wizard_accessibility_missing_hint">Wenn „Borderline“ nicht sofort sichtbar ist: in „Heruntergeladene Apps“ nach unten scrollen und den Eintrag öffnen. Dort den Schalter auf „An“ stellen.</string>
+    <string name="wizard_accessibility_missing_hint">Wenn „Borderline“ nicht sofort sichtbar ist: in „Heruntergeladene Apps“ nach unten scrollen und den Eintrag öffnen. Wichtig: Borderline erscheint nicht unter „Über anderen Apps anzeigen“, weil es als Accessibility-Service läuft.</string>
     <string name="wizard_accessibility_ready_hint">Accessibility ist aktiv. Du kannst mit der Einrichtung fortfahren.</string>
     <string name="wizard_accessibility_title">Accessibility ist die Voraussetzung</string>
     <string name="wizard_finish_attention_body">Auch wenn noch Rechte fehlen, wird das App-Icon ab jetzt zum Rückweg. Darüber kannst du Borderline später jederzeit reparieren oder nachziehen.</string>

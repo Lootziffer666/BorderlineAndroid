@@ -4,7 +4,7 @@
             "outputFile": "de.lootz.borderline.app-mergeDebugResources-38:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Admin\\.gradle\\caches\\9.3.1\\transforms\\b5ec209a2a943ddc6eaff83a9b07c67f\\workspace\\transformed\\material-1.13.0\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\Admin\\.gradle\\caches\\9.3.1\\transforms\\3acece1ff060e6e6b06f8e23fa91ae31\\workspace\\transformed\\material-1.13.0\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Admin\\.gradle\\caches\\9.3.1\\transforms\\ff81c9b80f32b1f53958d17228b5c3c1\\workspace\\transformed\\appcompat-1.7.1\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\Admin\\.gradle\\caches\\9.3.1\\transforms\\426d9a1ad2b622858e29713f19e67488\\workspace\\transformed\\appcompat-1.7.1\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
