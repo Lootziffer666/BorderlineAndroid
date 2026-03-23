@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binary files - prevent line ending conversions
+*.jar binary
+*.bin binary
+*.apk binary
+*.class binary

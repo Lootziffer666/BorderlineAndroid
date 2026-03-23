@@ -1,5 +1,0 @@
-R_DEF: Internal format may change without notice
-local
-string accessibility_service_description
-string accessibility_service_label
-xml borderline_accessibility_service

@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="accessibility_service_description">Erfasst UI-Kontext und zeigt ein reibungsarmes Borderline-Overlay.</string>
-    <string name="accessibility_service_label">Borderline</string>
-</resources>
