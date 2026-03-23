@@ -1,5 +1,7 @@
 package de.lootz.borderline.feature.overlay
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -7,15 +9,20 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import de.lootz.borderline.core.AccessibilityStateStore
+import de.lootz.borderline.core.BorderlineLogger
 import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
 import de.lootz.borderline.feature.shortcuts.QuickActionRegistry
@@ -23,6 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -57,10 +65,10 @@ class BorderlineOverlayController(
             val view = LayoutInflater.from(context).inflate(R.layout.view_edge_handle, null)
             val label = view.findViewById<TextView>(R.id.handleLabel)
             label.text = when (zone) {
-                HandleZone.LEFT_TOP_SAVED -> "TXT"
-                HandleZone.LEFT_BOTTOM_CLIPBOARD -> "CLP"
-                HandleZone.RIGHT_TOP_ACCESSIBILITY -> "ACC"
-                HandleZone.RIGHT_BOTTOM_QUICK -> "QCK"
+                HandleZone.LEFT_TOP_SAVED -> context.getString(R.string.handle_label_text)
+                HandleZone.LEFT_BOTTOM_CLIPBOARD -> context.getString(R.string.handle_label_clipboard)
+                HandleZone.RIGHT_TOP_ACCESSIBILITY -> context.getString(R.string.handle_label_accessibility)
+                HandleZone.RIGHT_BOTTOM_QUICK -> context.getString(R.string.handle_label_quick)
             }
             view.background = context.getDrawable(
                 if (zone == HandleZone.LEFT_TOP_SAVED || zone == HandleZone.LEFT_BOTTOM_CLIPBOARD) {
@@ -69,16 +77,20 @@ class BorderlineOverlayController(
                     R.drawable.bg_edge_handle_right
                 }
             )
-            view.contentDescription = "Borderline ${label.text}"
-            view.setOnClickListener { togglePanel(zone) }
+            view.contentDescription = context.getString(R.string.handle_content_desc_format, label.text)
+            view.setOnClickListener {
+                performHapticTick(view)
+                togglePanel(zone)
+            }
             view.setOnLongClickListener {
+                performHapticHeavy(view)
                 modulePrefs.setEnabled(ModuleId.OVERLAY, false)
                 modulePrefs.setEnabled(ModuleId.SHORTCUTS, false)
                 hideAll()
-                Toast.makeText(context, "Overlay deaktiviert", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.overlay_disabled_toast, Toast.LENGTH_SHORT).show()
                 true
             }
-            windowManager.addView(view, handleParams(zone))
+            safeAddView(view, handleParams(zone))
             handles[zone] = view
         }
     }
@@ -96,7 +108,7 @@ class BorderlineOverlayController(
                 HandleZone.RIGHT_TOP_ACCESSIBILITY,
                 HandleZone.RIGHT_BOTTOM_QUICK -> Gravity.END or Gravity.TOP
             }
-            x = -10
+            x = 0
             y = if (zone == HandleZone.LEFT_TOP_SAVED || zone == HandleZone.RIGHT_TOP_ACCESSIBILITY) yTop else yBottom
         }
     }
@@ -122,7 +134,7 @@ class BorderlineOverlayController(
                 HandleZone.RIGHT_TOP_ACCESSIBILITY,
                 HandleZone.RIGHT_BOTTOM_QUICK -> Gravity.TOP or Gravity.END
             }
-            x = 24
+            x = 16
             y = if (zone == HandleZone.LEFT_TOP_SAVED || zone == HandleZone.RIGHT_TOP_ACCESSIBILITY) 96 else 360
         }
 
@@ -136,15 +148,17 @@ class BorderlineOverlayController(
         )
         val closeButton = view.findViewById<Button>(R.id.closeOverlayButton)
 
-        closeButton.setOnClickListener { hidePanel() }
-
-        val menuTitle = when (zone) {
-            HandleZone.LEFT_TOP_SAVED -> "Gespeicherte Textblöcke"
-            HandleZone.LEFT_BOTTOM_CLIPBOARD -> "Erweiterte Zwischenablage"
-            HandleZone.RIGHT_TOP_ACCESSIBILITY -> "Accessibility Shortcuts"
-            HandleZone.RIGHT_BOTTOM_QUICK -> "QuickActions"
+        closeButton.setOnClickListener {
+            performHapticTick(view)
+            animatePanelOut(view)
         }
-        title.text = menuTitle
+
+        title.text = when (zone) {
+            HandleZone.LEFT_TOP_SAVED -> context.getString(R.string.panel_title_saved_text)
+            HandleZone.LEFT_BOTTOM_CLIPBOARD -> context.getString(R.string.panel_title_clipboard)
+            HandleZone.RIGHT_TOP_ACCESSIBILITY -> context.getString(R.string.panel_title_accessibility)
+            HandleZone.RIGHT_BOTTOM_QUICK -> context.getString(R.string.panel_title_quick_actions)
+        }
 
         val actions = menuActionsFor(zone)
         actionButtons.forEachIndexed { idx, button ->
@@ -155,60 +169,84 @@ class BorderlineOverlayController(
                 button.visibility = View.VISIBLE
                 button.text = item.label
                 button.setOnClickListener {
+                    performHapticTick(button)
                     status.text = item.action.invoke()
                 }
             }
         }
 
         stateCollectionJob?.cancel()
-        stateCollectionJob = AccessibilityStateStore.state.onEach { snapshot ->
-            if (status.text.isNullOrBlank() || status.text == "Bereit") {
-                status.text = "In ${snapshot.packageName}"
-            }
-        }.launchIn(overlayScope)
+        @Suppress("OPT_IN_USAGE")
+        stateCollectionJob = AccessibilityStateStore.state
+            .debounce(150)
+            .onEach { snapshot ->
+                val readyText = context.getString(R.string.status_ready)
+                if (status.text.isNullOrBlank() || status.text == readyText) {
+                    status.text = context.getString(R.string.status_in_app_format, snapshot.packageName)
+                }
+            }.launchIn(overlayScope)
 
-        windowManager.addView(view, params)
+        safeAddView(view, params)
         panelView = view
         activeZone = zone
         state = state.copy(visible = true)
+
+        animatePanelIn(view, zone)
     }
 
     private fun menuActionsFor(zone: HandleZone): List<MenuAction> {
         return when (zone) {
             HandleZone.LEFT_TOP_SAVED -> listOf(
-                MenuAction("Prompt: Kurz & klar") { copyToClipboard("Antworte kurz, klar und strukturiert.") },
-                MenuAction("Prompt: Bulletpoints") { copyToClipboard("Fasse das in maximal 5 Bulletpoints zusammen.") },
-                MenuAction("Borderline öffnen") { openBorderlineApp() },
-                MenuAction("Aktive App kopieren") { copyCurrentPackage() }
+                MenuAction(context.getString(R.string.action_prompt_short)) {
+                    copyToClipboard(context.getString(R.string.prompt_short_clear))
+                },
+                MenuAction(context.getString(R.string.action_prompt_bullets)) {
+                    copyToClipboard(context.getString(R.string.prompt_bulletpoints))
+                },
+                MenuAction(context.getString(R.string.action_open_borderline)) { openBorderlineApp() },
+                MenuAction(context.getString(R.string.action_copy_active_app)) { copyCurrentPackage() }
             )
 
             HandleZone.LEFT_BOTTOM_CLIPBOARD -> listOf(
-                MenuAction("Paket kopieren") { copyCurrentPackage() },
-                MenuAction("Screen kopieren") { copyCurrentScreen() },
-                MenuAction("App-Info öffnen") { openCurrentAppInfo() },
-                MenuAction("Text exportieren") { copyToClipboard("Export: ${AccessibilityStateStore.state.value.packageName}") }
+                MenuAction(context.getString(R.string.action_copy_package)) { copyCurrentPackage() },
+                MenuAction(context.getString(R.string.action_copy_screen)) { copyCurrentScreen() },
+                MenuAction(context.getString(R.string.action_open_app_info)) { openCurrentAppInfo() },
+                MenuAction(context.getString(R.string.action_export_text)) {
+                    copyToClipboard(
+                        context.getString(
+                            R.string.status_export_format,
+                            AccessibilityStateStore.state.value.packageName
+                        )
+                    )
+                }
             )
 
             HandleZone.RIGHT_TOP_ACCESSIBILITY -> listOf(
-                MenuAction("Accessibility öffnen") { openAccessibilitySettings() },
-                MenuAction("Bedienungshilfen-Button") { openAccessibilityButtonSettings() },
-                MenuAction("Borderline öffnen") { openBorderlineApp() },
-                MenuAction("Gesten: Hinweis") { "Navigationsgesten bleiben OEM-begrenzt (Android-Sicherheitsgrenze)." }
+                MenuAction(context.getString(R.string.action_open_accessibility)) { openAccessibilitySettings() },
+                MenuAction(context.getString(R.string.action_accessibility_button)) { openAccessibilityButtonSettings() },
+                MenuAction(context.getString(R.string.action_open_borderline)) { openBorderlineApp() },
+                MenuAction(context.getString(R.string.action_gesture_hint)) {
+                    context.getString(R.string.gesture_limit_hint)
+                }
             )
 
             HandleZone.RIGHT_BOTTOM_QUICK -> {
                 val shortcutsEnabled = modulePrefs.isEnabled(ModuleId.SHORTCUTS)
                 val quickActions = if (shortcutsEnabled) QuickActionRegistry(context).actions() else emptyList()
                 listOf(
-                    MenuAction(quickActions.getOrNull(0)?.label ?: "Borderline öffnen") {
+                    MenuAction(quickActions.getOrNull(0)?.label ?: context.getString(R.string.action_open_borderline)) {
                         quickActions.getOrNull(0)?.handler?.invoke() ?: openBorderlineApp()
                     },
-                    MenuAction(quickActions.getOrNull(1)?.label ?: "Accessibility öffnen") {
+                    MenuAction(quickActions.getOrNull(1)?.label ?: context.getString(R.string.action_open_accessibility)) {
                         quickActions.getOrNull(1)?.handler?.invoke() ?: openAccessibilitySettings()
                     },
-                    MenuAction("Kontext-App öffnen") { openCurrentAppInfo() },
-                    MenuAction("QuickActions Status") {
-                        if (shortcutsEnabled) "QuickActions aktiv" else "QuickActions aus"
+                    MenuAction(context.getString(R.string.action_context_app)) { openCurrentAppInfo() },
+                    MenuAction(context.getString(R.string.action_quick_status)) {
+                        if (shortcutsEnabled) {
+                            context.getString(R.string.quick_actions_active)
+                        } else {
+                            context.getString(R.string.quick_actions_off)
+                        }
                     }
                 )
             }
@@ -228,8 +266,8 @@ class BorderlineOverlayController(
     private fun copyToClipboard(text: String): String {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("borderline", text))
-        Toast.makeText(context, "Kopiert", Toast.LENGTH_SHORT).show()
-        return "Kopiert: $text"
+        Toast.makeText(context, R.string.copied_toast, Toast.LENGTH_SHORT).show()
+        return context.getString(R.string.copied_format, text)
     }
 
     private fun openBorderlineApp(): String {
@@ -237,36 +275,36 @@ class BorderlineOverlayController(
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return if (launchIntent != null) {
             context.startActivity(launchIntent)
-            "Borderline geöffnet"
+            context.getString(R.string.borderline_opened)
         } else {
-            "Konnte Borderline nicht öffnen"
+            context.getString(R.string.borderline_open_failed)
         }
     }
 
     private fun openAccessibilitySettings(): String {
         context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        return "Accessibility-Einstellungen geöffnet"
+        return context.getString(R.string.accessibility_settings_opened)
     }
 
     private fun openAccessibilityButtonSettings(): String {
         context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        return "Öffne Bedienungshilfen → Schaltfläche 'Bedienungshilfen'"
+        return context.getString(R.string.accessibility_button_hint)
     }
 
     private fun openCurrentAppInfo(): String {
         val pkg = AccessibilityStateStore.state.value.packageName
-        if (pkg == "unknown") return "Noch keine aktive App erkannt"
+        if (pkg == "unknown") return context.getString(R.string.no_active_app)
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
             .setData(Uri.parse("package:$pkg"))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
-        return "App-Info geöffnet: $pkg"
+        return context.getString(R.string.app_info_opened_format, pkg)
     }
 
     private fun hidePanel() {
         stateCollectionJob?.cancel()
         stateCollectionJob = null
-        panelView?.let { windowManager.removeView(it) }
+        panelView?.let { safeRemoveView(it) }
         panelView = null
         activeZone = null
         state = state.copy(visible = false)
@@ -274,13 +312,93 @@ class BorderlineOverlayController(
 
     private fun hideAll() {
         hidePanel()
-        handles.values.forEach { windowManager.removeView(it) }
+        handles.values.forEach { safeRemoveView(it) }
         handles.clear()
     }
 
     fun dispose() {
         hideAll()
         overlayScope.cancel()
+    }
+
+    // --- Animation helpers ---
+
+    private fun animatePanelIn(view: View, zone: HandleZone) {
+        val isLeft = zone == HandleZone.LEFT_TOP_SAVED || zone == HandleZone.LEFT_BOTTOM_CLIPBOARD
+        val translationStart = if (isLeft) -40f else 40f
+
+        view.alpha = 0f
+        view.translationX = translationStart
+        view.scaleX = 0.96f
+        view.scaleY = 0.96f
+
+        val fadeIn = ObjectAnimator.ofFloat(view, "alpha", 0f, 1f)
+        val slideIn = ObjectAnimator.ofFloat(view, "translationX", translationStart, 0f)
+        val scaleX = ObjectAnimator.ofFloat(view, "scaleX", 0.96f, 1f)
+        val scaleY = ObjectAnimator.ofFloat(view, "scaleY", 0.96f, 1f)
+
+        AnimatorSet().apply {
+            playTogether(fadeIn, slideIn, scaleX, scaleY)
+            duration = 200
+            interpolator = DecelerateInterpolator(2.0f)
+            start()
+        }
+    }
+
+    private fun animatePanelOut(view: View) {
+        val fadeOut = ObjectAnimator.ofFloat(view, "alpha", 1f, 0f)
+        val scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 0.96f)
+        val scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 0.96f)
+
+        AnimatorSet().apply {
+            playTogether(fadeOut, scaleX, scaleY)
+            duration = 150
+            interpolator = DecelerateInterpolator(1.5f)
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    hidePanel()
+                }
+            })
+            start()
+        }
+    }
+
+    // --- Haptic feedback helpers ---
+
+    private fun performHapticTick(view: View) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        } else {
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+    }
+
+    private fun performHapticHeavy(view: View) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+        } else {
+            @Suppress("DEPRECATION")
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+        }
+    }
+
+    // --- Safe WindowManager operations ---
+
+    private fun safeAddView(view: View, params: WindowManager.LayoutParams) {
+        try {
+            windowManager.addView(view, params)
+        } catch (e: Exception) {
+            BorderlineLogger.w("Failed to add overlay view: ${e.message}")
+        }
+    }
+
+    private fun safeRemoveView(view: View) {
+        try {
+            windowManager.removeView(view)
+        } catch (e: Exception) {
+            BorderlineLogger.w("Failed to remove overlay view: ${e.message}")
+        }
     }
 
     private fun baseParams(): WindowManager.LayoutParams {

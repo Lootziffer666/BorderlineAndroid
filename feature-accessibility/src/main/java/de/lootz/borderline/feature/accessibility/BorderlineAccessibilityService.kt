@@ -14,6 +14,9 @@ class BorderlineAccessibilityService : AccessibilityService() {
     private lateinit var modulePrefs: ModulePrefs
     private lateinit var overlayController: BorderlineOverlayController
 
+    private var lastEventTime = 0L
+    private var lastPackageName: String? = null
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         modulePrefs = ModulePrefs(this)
@@ -26,11 +29,20 @@ class BorderlineAccessibilityService : AccessibilityService() {
         if (event == null) return
         if (!modulePrefs.isEnabled(ModuleId.ACCESSIBILITY)) return
 
+        val now = System.currentTimeMillis()
+        val packageName = event.packageName?.toString() ?: "unknown"
+
+        if (packageName == lastPackageName && now - lastEventTime < DEBOUNCE_MS) {
+            return
+        }
+        lastEventTime = now
+        lastPackageName = packageName
+
         val snapshot = AccessibilitySnapshot(
-            packageName = event.packageName?.toString() ?: "unknown",
+            packageName = packageName,
             className = event.className?.toString() ?: "unknown",
             eventType = event.eventType,
-            timestamp = System.currentTimeMillis()
+            timestamp = now
         )
         AccessibilityStateStore.update(snapshot)
         overlayController.ensureState()
@@ -43,5 +55,9 @@ class BorderlineAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         overlayController.dispose()
         super.onDestroy()
+    }
+
+    companion object {
+        private const val DEBOUNCE_MS = 100L
     }
 }
