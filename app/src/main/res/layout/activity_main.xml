@@ -439,17 +439,17 @@
                     android:id="@+id/settingsModulesCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardBackgroundColor="#10FFFFFF"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -469,9 +469,11 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
+                            android:layout_marginTop="12dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:paddingBottom="12dp"
+                            android:paddingTop="12dp">
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -498,15 +500,17 @@
                             <com.google.android.material.materialswitch.MaterialSwitch
                                 android:id="@+id/settingsOverlaySwitch"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/module_overlay_label" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:paddingBottom="12dp"
+                            android:paddingTop="12dp">
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -533,7 +537,8 @@
                             <com.google.android.material.materialswitch.MaterialSwitch
                                 android:id="@+id/settingsShortcutsSwitch"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/module_shortcuts_label" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -542,18 +547,18 @@
                     android:id="@+id/settingsXiaomiCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:visibility="gone"
-                    app:cardBackgroundColor="#15FFFFFF"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:id="@+id/settingsXiaomiTitle"
@@ -601,17 +606,17 @@
                     android:id="@+id/statusCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardBackgroundColor="#10FFFFFF"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -644,7 +649,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:layout_marginBottom="28dp"
+                android:layout_marginBottom="16dp"
                 android:gravity="center_horizontal"
                 android:text="@string/limits_desc"
                 android:textAppearance="@style/TextAppearance.Material3.BodySmall"
