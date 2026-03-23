@@ -46,6 +46,7 @@
                     android:id="@+id/setupEyebrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:letterSpacing="0.02"
                     android:text="@string/setup_eyebrow"
                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                     android:textColor="@color/primary" />
@@ -55,6 +56,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="2dp"
                     android:text="@string/setup_intro"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                     android:textColor="@color/onSurface" />
@@ -62,22 +64,23 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    app:cardBackgroundColor="#14FFFFFF"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="28dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="20dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:id="@+id/wizardStepCounter"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
                             android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -94,7 +97,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:lineSpacingExtra="2dp"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
@@ -102,6 +106,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
+                            android:lineSpacingExtra="2dp"
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:textColor="@color/primary" />
 
@@ -110,7 +115,7 @@
                             style="@style/Widget.Material3.Button"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
+                            android:layout_marginTop="16dp"
                             android:text="@string/open_accessibility_settings" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -119,18 +124,18 @@
                     android:id="@+id/wizardModulesCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:visibility="gone"
-                    app:cardBackgroundColor="#10FFFFFF"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -150,9 +155,11 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
+                            android:layout_marginTop="12dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:paddingBottom="12dp"
+                            android:paddingTop="12dp">
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -179,15 +186,17 @@
                             <com.google.android.material.materialswitch.MaterialSwitch
                                 android:id="@+id/wizardOverlaySwitch"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/module_overlay_label" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:paddingBottom="12dp"
+                            android:paddingTop="12dp">
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -214,7 +223,8 @@
                             <com.google.android.material.materialswitch.MaterialSwitch
                                 android:id="@+id/wizardShortcutsSwitch"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" />
+                                android:layout_height="wrap_content"
+                                android:contentDescription="@string/module_shortcuts_label" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -223,18 +233,18 @@
                     android:id="@+id/wizardXiaomiCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:visibility="gone"
-                    app:cardBackgroundColor="#15FFFFFF"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:id="@+id/wizardXiaomiTitle"
@@ -282,18 +292,18 @@
                     android:id="@+id/wizardSummaryCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:visibility="gone"
-                    app:cardBackgroundColor="#10FFFFFF"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="24dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -323,7 +333,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -333,7 +343,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/action_back"
-                        android:visibility="gone" />
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_arrow_back"
+                        app:iconPadding="4dp" />
 
                     <View
                         android:layout_width="0dp"
@@ -360,6 +372,7 @@
                     android:id="@+id/settingsEyebrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:letterSpacing="0.02"
                     android:text="@string/settings_eyebrow"
                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                     android:textColor="@color/primary" />
@@ -369,6 +382,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="2dp"
                     android:text="@string/settings_intro"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                     android:textColor="@color/onSurface" />
@@ -376,17 +390,17 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    app:cardBackgroundColor="#14FFFFFF"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
                     app:cardCornerRadius="28dp"
-                    app:strokeColor="#26FFFFFF"
-                    app:strokeWidth="1dp">
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="20dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:id="@+id/settingsTitle"
@@ -400,7 +414,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                            android:lineSpacingExtra="2dp"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <com.google.android.material.button.MaterialButton
@@ -408,7 +423,7 @@
                             style="@style/Widget.Material3.Button"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
+                            android:layout_marginTop="16dp"
                             android:text="@string/open_accessibility_settings" />
 
                         <com.google.android.material.button.MaterialButton
