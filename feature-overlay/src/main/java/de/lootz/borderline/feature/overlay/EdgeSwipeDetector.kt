@@ -57,7 +57,7 @@ class EdgeSwipeDetector(
     }
 
     companion object {
-        private const val SWIPE_MIN_DISTANCE = 40f   // dp-independent px (tuned for 14dp handle width)
+        private const val SWIPE_MIN_DISTANCE = 40f   // px threshold (tuned for 14dp handle width)
         private const val SWIPE_MIN_VELOCITY = 120f
     }
 }

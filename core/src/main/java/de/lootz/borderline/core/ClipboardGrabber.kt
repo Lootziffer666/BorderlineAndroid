@@ -9,6 +9,8 @@ import android.content.Context
  */
 object ClipboardGrabber {
 
+    private const val PREVIEW_MAX_LENGTH = 200
+
     fun grab(context: Context): TransferItem? {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             ?: return null
@@ -25,7 +27,7 @@ object ClipboardGrabber {
         return TransferItem(
             kind = TransferItem.Kind.TEXT,
             label = label,
-            preview = text.take(200)
+            preview = text.take(PREVIEW_MAX_LENGTH)
         )
     }
 }

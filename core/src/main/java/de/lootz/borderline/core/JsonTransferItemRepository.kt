@@ -22,8 +22,8 @@ class JsonTransferItemRepository(context: Context) : TransferItemRepository {
 
     override suspend fun add(item: TransferItem) {
         val list = _items.value.toMutableList()
-        // avoid exact duplicates (same preview)
-        list.removeAll { it.preview == item.preview && !it.pinned }
+        // avoid exact duplicates (same preview, different id)
+        list.removeAll { it.id != item.id && it.preview == item.preview && !it.pinned }
         list.add(0, item)
         // trim unpinned items beyond MAX_ITEMS
         val pinned = list.filter { it.pinned }

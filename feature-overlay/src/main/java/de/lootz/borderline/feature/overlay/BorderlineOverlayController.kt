@@ -62,15 +62,17 @@ class BorderlineOverlayController(
     private var imeVisible = false
 
     // Persistence
-    private val snippetRepo: SnippetRepository = JsonSnippetRepository(context).also { repo ->
-        repo.seedDefaults(
+    private val snippetRepo: SnippetRepository = JsonSnippetRepository(context)
+    private val transferRepo: TransferItemRepository = JsonTransferItemRepository(context)
+
+    init {
+        (snippetRepo as? JsonSnippetRepository)?.seedDefaults(
             listOf(
                 Snippet(title = context.getString(R.string.action_prompt_short), content = context.getString(R.string.prompt_short_clear), category = "prompt"),
                 Snippet(title = context.getString(R.string.action_prompt_bullets), content = context.getString(R.string.prompt_bulletpoints), category = "prompt")
             )
         )
     }
-    private val transferRepo: TransferItemRepository = JsonTransferItemRepository(context)
 
     fun ensureState() {
         if (!modulePrefs.isEnabled(ModuleId.OVERLAY)) {
