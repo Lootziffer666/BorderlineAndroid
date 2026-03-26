@@ -21,7 +21,7 @@ Borderline reduziert Interaktionsreibung. Es tut genau zwei Dinge – und die sc
 
 ---
 
-## Aktueller Zustand – v0.4.0
+## Aktueller Zustand – v0.5.0
 
 ### ✅ Implementiert und funktionsfähig
 
@@ -30,21 +30,23 @@ Borderline reduziert Interaktionsreibung. Es tut genau zwei Dinge – und die sc
 - **Swipe-Gesten** – horizontales Einwischen vom Rand öffnet das Panel (`EdgeSwipeDetector`)
 - **Tap-Fallback** – Tap auf den Handle öffnet ebenfalls das Panel
 - **Snippets-Persistenz** – `JsonSnippetRepository` speichert Textbausteine per SharedPreferences (CRUD-Interface vorhanden)
+- **Snippet-CRUD-UI im Overlay** – Anlegen, Bearbeiten, Löschen von Snippets direkt aus dem Panel heraus
+- **Snippet-Suche im Panel** – Echtzeit-Textfilter über Titel und Inhalt
 - **Clipboard-Persistenz** – `JsonTransferItemRepository` speichert bis zu 20 ungepinnte + beliebig viele gepinnte Einträge
 - **Clipboard Auto-Grab** – `ClipboardGrabber` liest die Zwischenablage automatisch, wenn der Clipper-Bereich geöffnet wird
-- **IME-Handling** – `ImeStateDetector` erkennt die Tastatur und verschiebt die Handles nach oben
+- **Clipboard-Verlauf im Panel** – Gespeicherte `TransferItem`-Einträge als scrollbare Liste mit Zeitstempel
+- **Pin/Unpin-UI** – Angeheftete Einträge sind visuell hervorgehoben und bleiben beim Bereinigen erhalten
+- **Quick-Grab-Feedback** – Visuelles Häkchen-Feedback beim automatischen Clipboard-Grab
+- **IME-Handling** – `ImeStateDetector` erkennt die Tastatur und verschiebt Handles + Panel nach oben
+- **Fokus-Toggle** – Panel wird bei Texteingabe (Suche, Snippet-Editor) automatisch fokussierbar
 - **Haptic Feedback** – CONFIRM beim Ausführen einer Aktion, REJECT beim Deaktivieren per Longpress
 - **Modulares Build-System** – 5 klar getrennte Module mit Dependency-Prüfung
 - **StateFlow-Architektur** – Accessibility-Events → AccessibilityStateStore → UI-Subscription
 
-### ❌ Noch nicht implementiert (MVP-Lücken)
+### ❌ Noch nicht implementiert (Post-MVP)
 
-- **Snippet-CRUD-UI im Overlay** – Anlegen, Bearbeiten, Löschen von Snippets direkt aus dem Panel heraus
-- **Snippet-Suche im Panel** – Textfilter für gespeicherte Bausteine
-- **Clipboard-Verlauf im Panel** – Gespeicherte `TransferItem`-Einträge werden noch nicht als scrollbare Liste angezeigt
-- **Pin/Unpin-UI** – Repository-Logik vorhanden, aber keine Steuerelemente im Panel
-- **Quick-Grab-Flow** – Swipe → Auto-Grab → Häkchen → fertig (noch nicht als eigenständiger Flow umgesetzt)
 - **Bild- und Datei-Unterstützung im Clipper** – aktuell nur Text
+- **Quick-Grab-Flow als eigenständiger Kurzfluss** – Swipe → Grab → Häkchen → Auto-Close (aktuell: Panel bleibt offen)
 
 ---
 
@@ -64,6 +66,8 @@ app/
 │
 ├── feature-overlay/             # WindowManager-Overlay, Handles, Panels, Gesten
 │   ├── BorderlineOverlayController.kt  # Hauptcontroller: Handles, Panels, Auto-Grab, IME
+│   │   ├── buildSnippetPanel()  # Snippet-CRUD-UI mit Suche und Inline-Editor
+│   │   └── buildClipperPanel()  # Clipboard-Verlauf mit Pin/Unpin und Auto-Grab-Feedback
 │   ├── EdgeSwipeDetector.kt     # Swipe-Erkennung (40px Threshold, 120px/s Velocity)
 │   └── ImeStateDetector.kt      # Keyboard-Visibility via ViewTreeObserver
 │
@@ -132,17 +136,18 @@ Nach der Installation muss der Accessibility-Dienst manuell aktiviert werden:
 
 | Priorität | Feature | Status |
 |-----------|---------|--------|
-| 🔴 Kritisch | Snippet-CRUD-UI im Panel (anlegen, bearbeiten, löschen) | ❌ Offen |
-| 🔴 Kritisch | Clipboard-Verlauf als scrollbare Liste im Panel | ❌ Offen |
-| 🔴 Kritisch | Quick-Grab-Flow (Swipe → Grab → Häkchen) | ❌ Offen |
-| 🟡 Wichtig | Snippet-Suche im Panel | ❌ Offen |
-| 🟡 Wichtig | Pin/Unpin-UI für Clipboard-Einträge | ❌ Offen |
-| 🟡 Wichtig | Bild- und Datei-Unterstützung im Clipper | ❌ Offen |
+| ✅ Erledigt | Snippet-CRUD-UI im Panel (anlegen, bearbeiten, löschen) | ✅ |
+| ✅ Erledigt | Clipboard-Verlauf als scrollbare Liste im Panel | ✅ |
+| ✅ Erledigt | Snippet-Suche im Panel | ✅ |
+| ✅ Erledigt | Pin/Unpin-UI für Clipboard-Einträge | ✅ |
+| ✅ Erledigt | Quick-Grab-Feedback (visuelles Häkchen) | ✅ |
 | ✅ Erledigt | Zwei-Zonen-Architektur (Snippets + Clipper) | ✅ |
 | ✅ Erledigt | Swipe-Gesten + Tap-Fallback | ✅ |
 | ✅ Erledigt | JSON-Persistenz (Snippets + TransferItems) | ✅ |
 | ✅ Erledigt | Clipboard Auto-Grab beim Öffnen | ✅ |
 | ✅ Erledigt | IME-Handling (Handles snappen bei Tastatur) | ✅ |
+| 🟡 Offen | Bild- und Datei-Unterstützung im Clipper | ❌ Post-MVP |
+| 🟡 Offen | Quick-Grab als eigenständiger Auto-Close-Flow | ❌ Post-MVP |
 
 ---
 
