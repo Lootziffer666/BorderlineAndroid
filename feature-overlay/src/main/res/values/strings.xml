@@ -1,9 +1,7 @@
 <resources>
-    <!-- Edge handle labels -->
-    <string name="handle_label_text">TXT</string>
-    <string name="handle_label_clipboard">CLP</string>
-    <string name="handle_label_accessibility">ACC</string>
-    <string name="handle_label_quick">QCK</string>
+    <!-- Edge handle labels (2 primary zones) -->
+    <string name="handle_label_snippets">SNP</string>
+    <string name="handle_label_clipper">CLP</string>
 
     <!-- Handle content descriptions -->
     <string name="handle_content_desc_format">Borderline %1$s</string>
@@ -13,43 +11,28 @@
     <string name="copied_toast">Kopiert</string>
     <string name="copied_format">Kopiert: %1$s</string>
 
-    <!-- Panel titles -->
-    <string name="panel_title_saved_text">Textblöcke</string>
-    <string name="panel_title_clipboard">Zwischenablage</string>
-    <string name="panel_title_accessibility">Accessibility</string>
-    <string name="panel_title_quick_actions">QuickActions</string>
+    <!-- Panel titles (2 primary zones) -->
+    <string name="panel_title_snippets">Snippets</string>
+    <string name="panel_title_clipper">Zwischenablage</string>
 
     <!-- Menu action labels -->
     <string name="action_prompt_short">Prompt: Kurz &amp; klar</string>
     <string name="action_prompt_bullets">Prompt: Bulletpoints</string>
     <string name="action_open_borderline">Borderline öffnen</string>
-    <string name="action_copy_active_app">Aktive App kopieren</string>
+    <string name="action_paste_latest">Letztes einfügen</string>
     <string name="action_copy_package">Paket kopieren</string>
     <string name="action_copy_screen">Screen kopieren</string>
     <string name="action_open_app_info">App-Info öffnen</string>
-    <string name="action_export_text">Text exportieren</string>
-    <string name="action_open_accessibility">Accessibility öffnen</string>
-    <string name="action_accessibility_button">Bedienungshilfen</string>
-    <string name="action_gesture_hint">Gesten: Hinweis</string>
-    <string name="action_context_app">Kontext-App öffnen</string>
-    <string name="action_quick_status">QuickActions Status</string>
-    <string name="action_close">Schließen</string>
 
-    <!-- Clipboard text templates -->
+    <!-- Clipboard text templates (seed snippets) -->
     <string name="prompt_short_clear">Antworte kurz, klar und strukturiert.</string>
     <string name="prompt_bulletpoints">Fasse das in maximal 5 Bulletpoints zusammen.</string>
 
     <!-- Status messages -->
     <string name="status_ready">Bereit</string>
     <string name="status_in_app_format">In %1$s</string>
-    <string name="status_export_format">Export: %1$s</string>
-    <string name="gesture_limit_hint">Navigationsgesten bleiben OEM-begrenzt (Android-Sicherheitsgrenze).</string>
     <string name="borderline_opened">Borderline geöffnet</string>
     <string name="borderline_open_failed">Konnte Borderline nicht öffnen</string>
-    <string name="accessibility_settings_opened">Accessibility-Einstellungen geöffnet</string>
-    <string name="accessibility_button_hint">Öffne Bedienungshilfen → Schaltfläche \'Bedienungshilfen\'</string>
     <string name="app_info_opened_format">App-Info geöffnet: %1$s</string>
     <string name="no_active_app">Noch keine aktive App erkannt</string>
-    <string name="quick_actions_active">QuickActions aktiv</string>
-    <string name="quick_actions_off">QuickActions aus</string>
 </resources>
