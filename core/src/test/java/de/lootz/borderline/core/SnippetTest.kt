@@ -25,4 +25,27 @@ class SnippetTest {
         val snippet = Snippet(title = "T", content = "C")
         assertTrue(snippet.createdAt > 0)
     }
+
+    @Test
+    fun copyPreservesId() {
+        val original = Snippet(title = "T", content = "C")
+        val updated = original.copy(title = "New Title")
+        assertEquals(original.id, updated.id)
+        assertEquals("New Title", updated.title)
+        assertEquals("C", updated.content)
+    }
+
+    @Test
+    fun copyWithCategory() {
+        val snippet = Snippet(title = "T", content = "C", category = "prompt")
+        assertEquals("prompt", snippet.category)
+        val updated = snippet.copy(category = "code")
+        assertEquals("code", updated.category)
+    }
+
+    @Test
+    fun customIdIsPreserved() {
+        val snippet = Snippet(id = "custom-id", title = "T", content = "C")
+        assertEquals("custom-id", snippet.id)
+    }
 }

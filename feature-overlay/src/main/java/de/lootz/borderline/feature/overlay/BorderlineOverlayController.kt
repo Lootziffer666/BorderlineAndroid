@@ -9,16 +9,23 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
-import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import de.lootz.borderline.core.AccessibilityStateStore
@@ -30,14 +37,12 @@ import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
 import de.lootz.borderline.core.Snippet
 import de.lootz.borderline.core.SnippetRepository
+import de.lootz.borderline.core.TransferItem
 import de.lootz.borderline.core.TransferItemRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class BorderlineOverlayController(
@@ -49,21 +54,24 @@ class BorderlineOverlayController(
      */
     enum class HandleZone { SNIPPETS, CLIPPER }
 
-    private data class MenuAction(val label: String, val action: () -> String)
-
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val handles = mutableMapOf<HandleZone, View>()
     private var panelView: View? = null
     private val overlayScope = CoroutineScope(Dispatchers.Main + Job())
-    private var stateCollectionJob: Job? = null
     private var activeZone: HandleZone? = null
     private var state = OverlaySessionState()
     private var imeDetector: ImeStateDetector? = null
     private var imeVisible = false
+    private var panelFocusable = false
+
+    /** Snippet currently being edited; null when creating a new one. */
+    private var editingSnippetId: String? = null
 
     // Persistence
     private val snippetRepo: SnippetRepository = JsonSnippetRepository(context)
     private val transferRepo: TransferItemRepository = JsonTransferItemRepository(context)
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     init {
         (snippetRepo as? JsonSnippetRepository)?.seedDefaults(
@@ -84,6 +92,8 @@ class BorderlineOverlayController(
         }
     }
 
+    // ── Handles ──────────────────────────────────────────────
+
     private fun showHandles() {
         HandleZone.entries.forEach { zone ->
             val view = LayoutInflater.from(context).inflate(R.layout.view_edge_handle, null)
@@ -98,7 +108,6 @@ class BorderlineOverlayController(
             )
             view.contentDescription = context.getString(R.string.handle_content_desc_format, label.text)
 
-            // Swipe-in or tap to toggle the panel
             @Suppress("ClickableViewAccessibility")
             view.setOnTouchListener(EdgeSwipeDetector(
                 context = context,
@@ -123,7 +132,6 @@ class BorderlineOverlayController(
             safeAddView(view, handleParams(zone))
             handles[zone] = view
 
-            // IME detection: register on first handle added
             if (imeDetector == null) {
                 imeDetector = ImeStateDetector(view) { visible ->
                     imeVisible = visible
@@ -149,7 +157,6 @@ class BorderlineOverlayController(
         }
     }
 
-    /** Re-position both handles when IME visibility changes. */
     private fun repositionHandles() {
         handles.forEach { (zone, view) ->
             try {
@@ -158,7 +165,6 @@ class BorderlineOverlayController(
                 BorderlineLogger.w("Failed to reposition handle: ${e.message}")
             }
         }
-        // If panel is open, reposition it too
         panelView?.let { panel ->
             activeZone?.let { zone -> repositionPanel(panel, zone) }
         }
@@ -171,6 +177,8 @@ class BorderlineOverlayController(
             BorderlineLogger.w("Failed to reposition panel: ${e.message}")
         }
     }
+
+    // ── Panel lifecycle ──────────────────────────────────────
 
     private fun togglePanel(zone: HandleZone) {
         if (panelView != null && activeZone == zone) {
@@ -192,68 +200,23 @@ class BorderlineOverlayController(
             }
             x = 16
             y = if (imeVisible) yIme else yDefault
+            // Allow focus when panel contains input fields
+            if (panelFocusable) {
+                flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+            }
         }
     }
 
     private fun showPanel(zone: HandleZone) {
         hidePanel()
 
-        // Auto-grab clipboard when opening the Clipper panel
-        if (zone == HandleZone.CLIPPER) {
-            ClipboardGrabber.grab(context)?.let { grabbed ->
-                overlayScope.launch { transferRepo.add(grabbed) }
-            }
+        val view = when (zone) {
+            HandleZone.SNIPPETS -> buildSnippetPanel()
+            HandleZone.CLIPPER -> buildClipperPanel()
         }
 
-        val view = LayoutInflater.from(context).inflate(R.layout.view_overlay_panel, null)
+        panelFocusable = false
         val params = panelParams(zone)
-
-        val title = view.findViewById<TextView>(R.id.overlayTitle)
-        val status = view.findViewById<TextView>(R.id.overlayStatus)
-        val actionButtons = listOf(
-            view.findViewById<Button>(R.id.actionOneButton),
-            view.findViewById<Button>(R.id.actionTwoButton),
-            view.findViewById<Button>(R.id.actionThreeButton),
-            view.findViewById<Button>(R.id.actionFourButton)
-        )
-        val closeButton = view.findViewById<Button>(R.id.closeOverlayButton)
-
-        closeButton.setOnClickListener {
-            performHapticTick(view)
-            animatePanelOut(view)
-        }
-
-        title.text = when (zone) {
-            HandleZone.SNIPPETS -> context.getString(R.string.panel_title_snippets)
-            HandleZone.CLIPPER -> context.getString(R.string.panel_title_clipper)
-        }
-
-        val actions = menuActionsFor(zone)
-        actionButtons.forEachIndexed { idx, button ->
-            val item = actions.getOrNull(idx)
-            if (item == null) {
-                button.visibility = View.GONE
-            } else {
-                button.visibility = View.VISIBLE
-                button.text = item.label
-                button.setOnClickListener {
-                    performHapticTick(button)
-                    status.text = item.action.invoke()
-                }
-            }
-        }
-
-        stateCollectionJob?.cancel()
-        @Suppress("OPT_IN_USAGE")
-        stateCollectionJob = AccessibilityStateStore.state
-            .debounce(150)
-            .onEach { snapshot ->
-                val readyText = context.getString(R.string.status_ready)
-                if (status.text.isNullOrBlank() || status.text == readyText) {
-                    status.text = context.getString(R.string.status_in_app_format, snapshot.packageName)
-                }
-            }.launchIn(overlayScope)
-
         safeAddView(view, params)
         panelView = view
         activeZone = zone
@@ -262,81 +225,27 @@ class BorderlineOverlayController(
         animatePanelIn(view, zone)
     }
 
-    private fun menuActionsFor(zone: HandleZone): List<MenuAction> {
-        return when (zone) {
-            HandleZone.SNIPPETS -> {
-                val snippets = snippetRepo.snippets.value
-                val list = mutableListOf<MenuAction>()
-                // Show up to 3 snippets + an "open Borderline" action
-                snippets.take(3).forEach { s ->
-                    list.add(MenuAction(s.title) { copyToClipboard(s.content) })
+    /** Make the panel window focusable (needed for EditText input). */
+    private fun setPanelFocusable(focusable: Boolean) {
+        if (panelFocusable == focusable) return
+        panelFocusable = focusable
+        panelView?.let { view ->
+            activeZone?.let { zone ->
+                try {
+                    windowManager.updateViewLayout(view, panelParams(zone))
+                } catch (e: Exception) {
+                    BorderlineLogger.w("Failed to update panel focus: ${e.message}")
                 }
-                list.add(MenuAction(context.getString(R.string.action_open_borderline)) { openBorderlineApp() })
-                list
-            }
-
-            HandleZone.CLIPPER -> {
-                val items = transferRepo.items.value
-                val list = mutableListOf<MenuAction>()
-                if (items.isNotEmpty()) {
-                    // Show most-recent clipboard item
-                    val latest = items.first()
-                    list.add(MenuAction(context.getString(R.string.action_paste_latest)) {
-                        copyToClipboard(latest.preview)
-                    })
-                }
-                list.add(MenuAction(context.getString(R.string.action_copy_package)) { copyCurrentPackage() })
-                list.add(MenuAction(context.getString(R.string.action_copy_screen)) { copyCurrentScreen() })
-                list.add(MenuAction(context.getString(R.string.action_open_app_info)) { openCurrentAppInfo() })
-                list.take(4)
             }
         }
-    }
-
-    private fun copyCurrentPackage(): String {
-        val packageName = AccessibilityStateStore.state.value.packageName
-        return copyToClipboard(packageName)
-    }
-
-    private fun copyCurrentScreen(): String {
-        val className = AccessibilityStateStore.state.value.className
-        return copyToClipboard(className)
-    }
-
-    private fun copyToClipboard(text: String): String {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("borderline", text))
-        Toast.makeText(context, R.string.copied_toast, Toast.LENGTH_SHORT).show()
-        return context.getString(R.string.copied_format, text)
-    }
-
-    private fun openBorderlineApp(): String {
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return if (launchIntent != null) {
-            context.startActivity(launchIntent)
-            context.getString(R.string.borderline_opened)
-        } else {
-            context.getString(R.string.borderline_open_failed)
-        }
-    }
-
-    private fun openCurrentAppInfo(): String {
-        val pkg = AccessibilityStateStore.state.value.packageName
-        if (pkg == "unknown") return context.getString(R.string.no_active_app)
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-            .setData(Uri.parse("package:$pkg"))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-        return context.getString(R.string.app_info_opened_format, pkg)
     }
 
     private fun hidePanel() {
-        stateCollectionJob?.cancel()
-        stateCollectionJob = null
         panelView?.let { safeRemoveView(it) }
         panelView = null
         activeZone = null
+        panelFocusable = false
+        editingSnippetId = null
         state = state.copy(visible = false)
     }
 
@@ -353,7 +262,354 @@ class BorderlineOverlayController(
         overlayScope.cancel()
     }
 
-    // --- Animation helpers ---
+    // ── Snippet panel ────────────────────────────────────────
+
+    private fun buildSnippetPanel(): View {
+        val view = LayoutInflater.from(context).inflate(R.layout.view_snippet_panel, null)
+
+        val closeBtn = view.findViewById<View>(R.id.snippetCloseButton)
+        val searchField = view.findViewById<EditText>(R.id.snippetSearchField)
+        val listContainer = view.findViewById<LinearLayout>(R.id.snippetListContainer)
+        val scrollView = view.findViewById<ScrollView>(R.id.snippetScrollView)
+        val emptyState = view.findViewById<TextView>(R.id.snippetEmptyState)
+        val addButton = view.findViewById<View>(R.id.snippetAddButton)
+        val editContainer = view.findViewById<View>(R.id.snippetEditContainer)
+
+        // Constrain scroll height
+        scrollView.post {
+            val maxH = (context.resources.displayMetrics.heightPixels * 0.40f).toInt()
+            if (scrollView.height > maxH) {
+                scrollView.layoutParams = scrollView.layoutParams.apply { height = maxH }
+            }
+        }
+
+        closeBtn.setOnClickListener {
+            performHapticTick(view)
+            animatePanelOut(view)
+        }
+
+        addButton.setOnClickListener {
+            performHapticTick(view)
+            showSnippetEditForm(view, null)
+        }
+
+        // Populate list
+        refreshSnippetList(view, null)
+
+        // Search filter
+        searchField.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val query = s?.toString()?.trim()
+                refreshSnippetList(view, query)
+            }
+        })
+
+        // Make panel focusable when search field gains focus
+        searchField.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) setPanelFocusable(true)
+        }
+
+        return view
+    }
+
+    private fun refreshSnippetList(panelView: View, query: String?) {
+        val listContainer = panelView.findViewById<LinearLayout>(R.id.snippetListContainer)
+        val emptyState = panelView.findViewById<TextView>(R.id.snippetEmptyState)
+
+        listContainer.removeAllViews()
+
+        val allSnippets = snippetRepo.snippets.value
+        val filtered = if (query.isNullOrBlank()) {
+            allSnippets
+        } else {
+            val q = query.lowercase()
+            allSnippets.filter {
+                it.title.lowercase().contains(q) || it.content.lowercase().contains(q)
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            emptyState.visibility = View.VISIBLE
+            listContainer.visibility = View.GONE
+        } else {
+            emptyState.visibility = View.GONE
+            listContainer.visibility = View.VISIBLE
+            filtered.forEach { snippet -> addSnippetItemView(panelView, listContainer, snippet) }
+        }
+    }
+
+    private fun addSnippetItemView(panelView: View, container: LinearLayout, snippet: Snippet) {
+        val itemView = LayoutInflater.from(context).inflate(R.layout.view_snippet_item, container, false)
+        val titleView = itemView.findViewById<TextView>(R.id.snippetItemTitle)
+        val previewView = itemView.findViewById<TextView>(R.id.snippetItemPreview)
+        val editBtn = itemView.findViewById<View>(R.id.snippetItemEdit)
+        val deleteBtn = itemView.findViewById<View>(R.id.snippetItemDelete)
+
+        titleView.text = snippet.title
+        previewView.text = snippet.content.take(PREVIEW_LENGTH)
+
+        // Tap on content area → copy to clipboard
+        itemView.findViewById<View>(R.id.snippetItemContent).setOnClickListener {
+            performHapticTick(itemView)
+            copyToClipboard(snippet.content)
+        }
+
+        editBtn.setOnClickListener {
+            performHapticTick(itemView)
+            showSnippetEditForm(panelView, snippet)
+        }
+
+        deleteBtn.setOnClickListener {
+            performHapticTick(itemView)
+            overlayScope.launch {
+                snippetRepo.delete(snippet.id)
+                refreshSnippetList(panelView, currentSearchQuery(panelView))
+            }
+            Toast.makeText(context, R.string.snippet_deleted, Toast.LENGTH_SHORT).show()
+        }
+
+        container.addView(itemView)
+    }
+
+    private fun currentSearchQuery(panelView: View): String? {
+        return panelView.findViewById<EditText>(R.id.snippetSearchField)?.text?.toString()?.trim()
+            .takeIf { !it.isNullOrBlank() }
+    }
+
+    private fun showSnippetEditForm(panelView: View, snippet: Snippet?) {
+        val editContainer = panelView.findViewById<View>(R.id.snippetEditContainer)
+        val listSection = panelView.findViewById<View>(R.id.snippetScrollView)
+        val addButton = panelView.findViewById<View>(R.id.snippetAddButton)
+        val searchField = panelView.findViewById<View>(R.id.snippetSearchField)
+        val emptyState = panelView.findViewById<View>(R.id.snippetEmptyState)
+        val editLabel = panelView.findViewById<TextView>(R.id.snippetEditLabel)
+        val titleField = panelView.findViewById<EditText>(R.id.snippetEditTitle)
+        val contentField = panelView.findViewById<EditText>(R.id.snippetEditContent)
+        val cancelBtn = panelView.findViewById<View>(R.id.snippetEditCancel)
+        val saveBtn = panelView.findViewById<View>(R.id.snippetEditSave)
+
+        // Switch to edit mode
+        listSection.visibility = View.GONE
+        addButton.visibility = View.GONE
+        searchField.visibility = View.GONE
+        emptyState.visibility = View.GONE
+        editContainer.visibility = View.VISIBLE
+
+        editingSnippetId = snippet?.id
+
+        if (snippet != null) {
+            editLabel.text = context.getString(R.string.snippet_edit)
+            titleField.setText(snippet.title)
+            contentField.setText(snippet.content)
+        } else {
+            editLabel.text = context.getString(R.string.snippet_new)
+            titleField.text.clear()
+            contentField.text.clear()
+        }
+
+        setPanelFocusable(true)
+        titleField.requestFocus()
+
+        cancelBtn.setOnClickListener {
+            performHapticTick(panelView)
+            hideSnippetEditForm(panelView)
+        }
+
+        saveBtn.setOnClickListener {
+            performHapticTick(panelView)
+            val title = titleField.text.toString().trim()
+            val content = contentField.text.toString().trim()
+
+            if (title.isEmpty()) {
+                Toast.makeText(context, R.string.snippet_title_required, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (content.isEmpty()) {
+                Toast.makeText(context, R.string.snippet_content_required, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            overlayScope.launch {
+                val existingId = editingSnippetId
+                if (existingId != null) {
+                    val existing = snippetRepo.getById(existingId)
+                    if (existing != null) {
+                        snippetRepo.update(existing.copy(title = title, content = content))
+                    }
+                } else {
+                    snippetRepo.add(Snippet(title = title, content = content))
+                }
+                editingSnippetId = null
+                hideSnippetEditForm(panelView)
+                Toast.makeText(context, R.string.snippet_saved, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun hideSnippetEditForm(panelView: View) {
+        val editContainer = panelView.findViewById<View>(R.id.snippetEditContainer)
+        val listSection = panelView.findViewById<View>(R.id.snippetScrollView)
+        val addButton = panelView.findViewById<View>(R.id.snippetAddButton)
+        val searchField = panelView.findViewById<View>(R.id.snippetSearchField)
+
+        editContainer.visibility = View.GONE
+        listSection.visibility = View.VISIBLE
+        addButton.visibility = View.VISIBLE
+        searchField.visibility = View.VISIBLE
+
+        setPanelFocusable(false)
+        editingSnippetId = null
+        refreshSnippetList(panelView, currentSearchQuery(panelView))
+    }
+
+    // ── Clipper panel ────────────────────────────────────────
+
+    private fun buildClipperPanel(): View {
+        val view = LayoutInflater.from(context).inflate(R.layout.view_clipper_panel, null)
+
+        val closeBtn = view.findViewById<View>(R.id.clipperCloseButton)
+        val grabStatus = view.findViewById<View>(R.id.clipperGrabStatus)
+        val grabText = view.findViewById<TextView>(R.id.clipperGrabText)
+        val copyPackageBtn = view.findViewById<View>(R.id.clipperCopyPackageButton)
+        val copyScreenBtn = view.findViewById<View>(R.id.clipperCopyScreenButton)
+
+        closeBtn.setOnClickListener {
+            performHapticTick(view)
+            animatePanelOut(view)
+        }
+
+        // Auto-grab clipboard content
+        val grabbed = ClipboardGrabber.grab(context)
+        if (grabbed != null) {
+            overlayScope.launch { transferRepo.add(grabbed) }
+            // Show grab feedback
+            grabStatus.visibility = View.VISIBLE
+            grabText.text = context.getString(R.string.grab_success)
+            // Auto-hide feedback after a delay
+            mainHandler.postDelayed({ grabStatus.visibility = View.GONE }, GRAB_FEEDBACK_MS)
+        }
+
+        // Quick actions
+        copyPackageBtn.setOnClickListener {
+            performHapticTick(view)
+            copyCurrentPackage()
+        }
+        copyScreenBtn.setOnClickListener {
+            performHapticTick(view)
+            copyCurrentScreen()
+        }
+
+        // Constrain scroll height
+        val scrollView = view.findViewById<ScrollView>(R.id.clipperScrollView)
+        scrollView.post {
+            val maxH = (context.resources.displayMetrics.heightPixels * 0.40f).toInt()
+            if (scrollView.height > maxH) {
+                scrollView.layoutParams = scrollView.layoutParams.apply { height = maxH }
+            }
+        }
+
+        // Populate clipboard history
+        refreshClipperList(view)
+
+        return view
+    }
+
+    private fun refreshClipperList(panelView: View) {
+        val listContainer = panelView.findViewById<LinearLayout>(R.id.clipperListContainer)
+        val emptyState = panelView.findViewById<TextView>(R.id.clipperEmptyState)
+
+        listContainer.removeAllViews()
+
+        val items = transferRepo.items.value
+        if (items.isEmpty()) {
+            emptyState.visibility = View.VISIBLE
+            listContainer.visibility = View.GONE
+        } else {
+            emptyState.visibility = View.GONE
+            listContainer.visibility = View.VISIBLE
+            items.forEach { item -> addTransferItemView(panelView, listContainer, item) }
+        }
+    }
+
+    private fun addTransferItemView(panelView: View, container: LinearLayout, item: TransferItem) {
+        val itemView = LayoutInflater.from(context).inflate(R.layout.view_transfer_item, container, false)
+        val previewView = itemView.findViewById<TextView>(R.id.transferItemPreview)
+        val timestampView = itemView.findViewById<TextView>(R.id.transferItemTimestamp)
+        val pinBtn = itemView.findViewById<ImageView>(R.id.transferItemPin)
+        val deleteBtn = itemView.findViewById<View>(R.id.transferItemDelete)
+
+        previewView.text = item.preview.take(PREVIEW_LENGTH)
+        timestampView.text = formatRelativeTime(item.timestamp)
+
+        // Pin visual indicator
+        if (item.pinned) {
+            pinBtn.alpha = 1.0f
+        } else {
+            pinBtn.alpha = 0.4f
+        }
+
+        // Tap on content area → copy to clipboard
+        itemView.findViewById<View>(R.id.transferItemContent).setOnClickListener {
+            performHapticTick(itemView)
+            copyToClipboard(item.preview)
+        }
+
+        pinBtn.setOnClickListener {
+            performHapticTick(itemView)
+            overlayScope.launch {
+                transferRepo.pin(item.id, !item.pinned)
+                refreshClipperList(panelView)
+            }
+            val msg = if (item.pinned) R.string.item_unpinned else R.string.item_pinned
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+
+        deleteBtn.setOnClickListener {
+            performHapticTick(itemView)
+            overlayScope.launch {
+                transferRepo.delete(item.id)
+                refreshClipperList(panelView)
+            }
+            Toast.makeText(context, R.string.item_deleted, Toast.LENGTH_SHORT).show()
+        }
+
+        container.addView(itemView)
+    }
+
+    private fun formatRelativeTime(timestamp: Long): String {
+        val diff = System.currentTimeMillis() - timestamp
+        val minutes = diff / 60_000
+        val hours = diff / 3_600_000
+        val days = diff / 86_400_000
+        return when {
+            minutes < 1 -> context.getString(R.string.time_just_now)
+            minutes < 60 -> context.getString(R.string.time_minutes_ago_format, minutes.toInt())
+            hours < 24 -> context.getString(R.string.time_hours_ago_format, hours.toInt())
+            else -> context.getString(R.string.time_days_ago_format, days.toInt())
+        }
+    }
+
+    // ── Clipboard helpers ────────────────────────────────────
+
+    private fun copyCurrentPackage() {
+        val packageName = AccessibilityStateStore.state.value.packageName
+        copyToClipboard(packageName)
+    }
+
+    private fun copyCurrentScreen() {
+        val className = AccessibilityStateStore.state.value.className
+        copyToClipboard(className)
+    }
+
+    private fun copyToClipboard(text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("borderline", text))
+        Toast.makeText(context, R.string.copied_toast, Toast.LENGTH_SHORT).show()
+    }
+
+    // ── Animation helpers ────────────────────────────────────
 
     private fun animatePanelIn(view: View, zone: HandleZone) {
         val isLeft = zone == HandleZone.SNIPPETS
@@ -395,7 +651,7 @@ class BorderlineOverlayController(
         }
     }
 
-    // --- Haptic feedback helpers ---
+    // ── Haptic feedback helpers ──────────────────────────────
 
     private fun performHapticTick(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -415,7 +671,7 @@ class BorderlineOverlayController(
         }
     }
 
-    // --- Safe WindowManager operations ---
+    // ── Safe WindowManager operations ────────────────────────
 
     private fun safeAddView(view: View, params: WindowManager.LayoutParams) {
         try {
@@ -447,5 +703,10 @@ class BorderlineOverlayController(
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
+    }
+
+    companion object {
+        private const val PREVIEW_LENGTH = 80
+        private const val GRAB_FEEDBACK_MS = 2000L
     }
 }

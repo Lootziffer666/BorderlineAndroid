@@ -23,6 +23,39 @@
     <string name="action_copy_package">Paket kopieren</string>
     <string name="action_copy_screen">Screen kopieren</string>
     <string name="action_open_app_info">App-Info öffnen</string>
+    <string name="action_copy_package_short">Paket</string>
+    <string name="action_copy_screen_short">Screen</string>
+
+    <!-- Snippet workspace -->
+    <string name="snippet_search_hint">Suchen…</string>
+    <string name="snippet_empty">Noch keine Snippets</string>
+    <string name="snippet_add">Snippet hinzufügen</string>
+    <string name="snippet_new">Neues Snippet</string>
+    <string name="snippet_edit">Snippet bearbeiten</string>
+    <string name="snippet_title_hint">Titel</string>
+    <string name="snippet_content_hint">Inhalt</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_edit_snippet">Snippet bearbeiten</string>
+    <string name="action_delete_snippet">Snippet löschen</string>
+    <string name="snippet_deleted">Snippet gelöscht</string>
+    <string name="snippet_saved">Snippet gespeichert</string>
+    <string name="snippet_title_required">Titel erforderlich</string>
+    <string name="snippet_content_required">Inhalt erforderlich</string>
+
+    <!-- Clipper workspace -->
+    <string name="clipper_empty">Keine Einträge</string>
+    <string name="grab_success">Gesichert</string>
+    <string name="grab_success_desc">Erfolgreich übernommen</string>
+    <string name="action_pin_toggle">Anheften / Lösen</string>
+    <string name="action_delete_item">Eintrag löschen</string>
+    <string name="item_pinned">Angeheftet</string>
+    <string name="item_unpinned">Gelöst</string>
+    <string name="item_deleted">Eintrag gelöscht</string>
+    <string name="time_just_now">Gerade eben</string>
+    <string name="time_minutes_ago_format">Vor %1$d min</string>
+    <string name="time_hours_ago_format">Vor %1$d h</string>
+    <string name="time_days_ago_format">Vor %1$d d</string>
 
     <!-- Clipboard text templates (seed snippets) -->
     <string name="prompt_short_clear">Antworte kurz, klar und strukturiert.</string>

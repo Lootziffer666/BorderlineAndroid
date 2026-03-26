@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="6dp">
+
+    <!-- Snippet content (tap to copy) -->
+    <LinearLayout
+        android:id="@+id/snippetItemContent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:id="@+id/snippetItemTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:textColor="#C0D0E0"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/snippetItemPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:textColor="#607085"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Edit button -->
+    <ImageView
+        android:id="@+id/snippetItemEdit"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/action_edit_snippet"
+        android:padding="4dp"
+        android:src="@drawable/ic_edit"
+        app:tint="#607085" />
+
+    <!-- Delete button -->
+    <ImageView
+        android:id="@+id/snippetItemDelete"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/action_delete_snippet"
+        android:padding="4dp"
+        android:src="@drawable/ic_delete"
+        app:tint="#607085" />
+</LinearLayout>
