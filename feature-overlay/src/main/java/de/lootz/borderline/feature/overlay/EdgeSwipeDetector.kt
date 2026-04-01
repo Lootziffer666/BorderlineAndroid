@@ -35,9 +35,9 @@ class EdgeSwipeDetector(
             if (e1 == null) return false
             val dx = e2.x - e1.x
             val dy = e2.y - e1.y
-            if (abs(dx) < abs(dy)) return false            // vertical gesture – ignore
-            if (abs(dx) < SWIPE_MIN_DISTANCE) return false  // too short
-            if (abs(velocityX) < SWIPE_MIN_VELOCITY) return false
+            if (abs(dx) < abs(dy)) return false
+            if (abs(dx) < BorderlineMotion.SWIPE_MIN_DISTANCE) return false
+            if (abs(velocityX) < BorderlineMotion.SWIPE_MIN_VELOCITY) return false
 
             // left-edge: swipe must go RIGHT (dx > 0); right-edge: swipe must go LEFT (dx < 0)
             val valid = if (isLeftEdge) dx > 0 else dx < 0
@@ -54,10 +54,5 @@ class EdgeSwipeDetector(
     @Suppress("ClickableViewAccessibility")
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         return gestureDetector.onTouchEvent(event)
-    }
-
-    companion object {
-        private const val SWIPE_MIN_DISTANCE = 40f   // px threshold (tuned for 14dp handle width)
-        private const val SWIPE_MIN_VELOCITY = 120f
     }
 }
