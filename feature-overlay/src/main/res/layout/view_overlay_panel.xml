@@ -8,7 +8,7 @@
     android:outlineAmbientShadowColor="#08D8C3F2"
     android:outlineSpotShadowColor="#08D8C3F2"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp"
+    android:paddingHorizontal="18dp"
     android:paddingTop="18dp"
     android:paddingBottom="12dp">
 

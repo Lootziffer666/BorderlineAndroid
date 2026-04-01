@@ -1,30 +1,21 @@
 package de.lootz.borderline.feature.overlay
 
 import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
-import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -52,14 +43,10 @@ class BorderlineOverlayController(
     private val context: Context,
     private val modulePrefs: ModulePrefs
 ) {
-    /**
-     * Two primary overlay zones (MVP): SNIPPETS on the left edge, CLIPPER on the right.
-     */
     enum class HandleZone { SNIPPETS, CLIPPER }
 
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val handles = mutableMapOf<HandleZone, View>()
-    private val handleBreathers = mutableMapOf<Int, ValueAnimator>()
     private var panelView: View? = null
     private val overlayScope = CoroutineScope(Dispatchers.Main + Job())
     private var activeZone: HandleZone? = null
@@ -68,7 +55,6 @@ class BorderlineOverlayController(
     private var imeVisible = false
     private var panelFocusable = false
 
-    /** Snippet currently being edited; null when creating a new one. */
     private var editingSnippetId: String? = null
 
     // Persistence
@@ -76,6 +62,12 @@ class BorderlineOverlayController(
     private val transferRepo: TransferItemRepository = JsonTransferItemRepository(context)
 
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** Active breathing animators per handle — cancelled on touch, resumed on idle. */
+    private val breatheAnimators = mutableMapOf<HandleZone, ValueAnimator>()
+
+    /** Active panel-in/out animator — cancelled if panel toggles rapidly. */
+    private var panelAnimator: AnimatorSet? = null
 
     init {
         (snippetRepo as? JsonSnippetRepository)?.seedDefaults(
@@ -112,34 +104,47 @@ class BorderlineOverlayController(
             )
             view.contentDescription = context.getString(R.string.handle_content_desc_format, label.text)
 
+            val haloOverlay = view.findViewById<View>(R.id.handleHalo)
+
             @Suppress("ClickableViewAccessibility")
-            view.setOnTouchListener(EdgeSwipeDetector(
-                context = context,
-                isLeftEdge = isLeft,
-                onSwipeIn = {
-                    performHapticTick(view)
-                    togglePanel(zone)
-                },
-                onTap = {
-                    performHapticTick(view)
-                    togglePanel(zone)
+            view.setOnTouchListener(object : View.OnTouchListener {
+                private var isPressed = false
+
+                override fun onTouch(v: View, event: MotionEvent): Boolean {
+                    when (event.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            isPressed = true
+                            stopBreathing(zone)
+                            showHalo(haloOverlay)
+                            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_LIGHT)
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            if (isPressed) {
+                                isPressed = false
+                                hideHalo(haloOverlay)
+                                startBreathing(zone, view)
+                            }
+                        }
+                    }
+                    // Delegate gesture detection
+                    return gestureDetector(zone, isLeft).onTouchEvent(event)
                 }
-            ))
+            })
+
             view.setOnLongClickListener {
-                performHapticHeavy(view)
+                BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_REJECT)
                 modulePrefs.setEnabled(ModuleId.OVERLAY, false)
                 modulePrefs.setEnabled(ModuleId.SHORTCUTS, false)
                 hideAll()
                 Toast.makeText(context, R.string.overlay_disabled_toast, Toast.LENGTH_SHORT).show()
                 true
             }
-            // Start semi-disappearing: 65% opacity for the "obviously disappearing" look
-            view.alpha = 0.65f
+
             safeAddView(view, handleParams(zone))
             handles[zone] = view
 
-            // Subtle breathing pulse — the handle gently becomes present then recedes
-            startHandleBreathing(view)
+            // Start idle breathing
+            startBreathing(zone, view)
 
             if (imeDetector == null) {
                 imeDetector = ImeStateDetector(view) { visible ->
@@ -151,6 +156,75 @@ class BorderlineOverlayController(
         }
     }
 
+    private fun gestureDetector(zone: HandleZone, isLeft: Boolean) = EdgeSwipeDetector(
+        context = context,
+        isLeftEdge = isLeft,
+        onSwipeIn = {
+            BorderlineMotion.haptic(handles[zone]!!, BorderlineMotion.HAPTIC_CONFIRM)
+            togglePanel(zone)
+        },
+        onTap = {
+            BorderlineMotion.haptic(handles[zone]!!, BorderlineMotion.HAPTIC_LIGHT)
+            togglePanel(zone)
+        }
+    )
+
+    // ── Handle breathing ─────────────────────────────────────
+
+    private fun startBreathing(zone: HandleZone, view: View) {
+        stopBreathing(zone)
+        val animator = BorderlineMotion.startHandleBreathing(view)
+        breatheAnimators[zone] = animator
+    }
+
+    private fun stopBreathing(zone: HandleZone) {
+        breatheAnimators[zone]?.cancel()
+        breatheAnimators.remove(zone)
+    }
+
+    private fun dimHandles() {
+        handles.forEach { (zone, view) ->
+            stopBreathing(zone)
+            view.animate()
+                .alpha(BorderlineMotion.HANDLE_DIMMED_ALPHA)
+                .setDuration(BorderlineMotion.PANEL_OUT_DURATION)
+                .start()
+        }
+    }
+
+    private fun restoreHandles() {
+        handles.forEach { (zone, view) ->
+            view.animate()
+                .alpha(BorderlineMotion.HANDLE_IDLE_ALPHA_MAX)
+                .setDuration(BorderlineMotion.PANEL_IN_DURATION)
+                .withEndAction { startBreathing(zone, view) }
+                .start()
+        }
+    }
+
+    // ── Halo effect ──────────────────────────────────────────
+
+    private fun showHalo(halo: View?) {
+        halo?.animate()?.cancel()
+        halo?.alpha = 0f
+        halo?.visibility = View.VISIBLE
+        halo?.animate()
+            ?.alpha(1f)
+            ?.setDuration(BorderlineMotion.HALO_IN_DURATION)
+            ?.start()
+    }
+
+    private fun hideHalo(halo: View?) {
+        halo?.animate()?.cancel()
+        halo?.animate()
+            ?.alpha(0f)
+            ?.setDuration(BorderlineMotion.HALO_OUT_DURATION)
+            ?.withEndAction { halo?.visibility = View.INVISIBLE }
+            ?.start()
+    }
+
+    // ── Handle layout params ─────────────────────────────────
+
     private fun handleParams(zone: HandleZone): WindowManager.LayoutParams {
         val yCenter = (context.resources.displayMetrics.heightPixels * 0.45f).toInt()
         val yIme = (context.resources.displayMetrics.heightPixels * 0.20f).toInt()
@@ -161,8 +235,7 @@ class BorderlineOverlayController(
                 HandleZone.SNIPPETS -> Gravity.START or Gravity.TOP
                 HandleZone.CLIPPER -> Gravity.END or Gravity.TOP
             }
-            // Partially off-screen: only the rounded pill peeks in from the edge
-            x = -12
+            x = 0
             y = if (imeVisible) yIme else yCenter
         }
     }
@@ -210,7 +283,6 @@ class BorderlineOverlayController(
             }
             x = 16
             y = if (imeVisible) yIme else yDefault
-            // Allow focus when panel contains input fields
             if (panelFocusable) {
                 flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
             }
@@ -218,6 +290,8 @@ class BorderlineOverlayController(
     }
 
     private fun showPanel(zone: HandleZone) {
+        // Cancel any running panel animation
+        panelAnimator?.cancel()
         hidePanel()
 
         val view = when (zone) {
@@ -232,10 +306,18 @@ class BorderlineOverlayController(
         activeZone = zone
         state = state.copy(visible = true)
 
-        animatePanelIn(view, zone)
+        // Apply glass blur on API 31+
+        GlassEffect.apply(view)
+
+        // Dim handles while panel is open
+        dimHandles()
+
+        // Calm entrance: 160ms fade + 8dp translate, no scale
+        val isLeft = zone == HandleZone.SNIPPETS
+        val translateDx = if (isLeft) -1f else 1f
+        panelAnimator = BorderlineMotion.panelIn(view, translateDx).also { it.start() }
     }
 
-    /** Make the panel window focusable (needed for EditText input). */
     private fun setPanelFocusable(focusable: Boolean) {
         if (panelFocusable == focusable) return
         panelFocusable = focusable
@@ -257,21 +339,22 @@ class BorderlineOverlayController(
         panelFocusable = false
         editingSnippetId = null
         state = state.copy(visible = false)
+        restoreHandles()
     }
 
     private fun hideAll() {
+        panelAnimator?.cancel()
+        panelAnimator = null
         hidePanel()
         imeDetector?.unregister()
         imeDetector = null
-        handleBreathers.values.forEach { it.cancel() }
-        handleBreathers.clear()
+        breatheAnimators.values.forEach { it.cancel() }
+        breatheAnimators.clear()
         handles.values.forEach { safeRemoveView(it) }
         handles.clear()
     }
 
     fun dispose() {
-        handleBreathers.values.forEach { it.cancel() }
-        handleBreathers.clear()
         hideAll()
         overlayScope.cancel()
     }
@@ -287,9 +370,7 @@ class BorderlineOverlayController(
         val scrollView = view.findViewById<ScrollView>(R.id.snippetScrollView)
         val emptyState = view.findViewById<TextView>(R.id.snippetEmptyState)
         val addButton = view.findViewById<View>(R.id.snippetAddButton)
-        val editContainer = view.findViewById<View>(R.id.snippetEditContainer)
 
-        // Constrain scroll height
         scrollView.post {
             val maxH = (context.resources.displayMetrics.heightPixels * 0.40f).toInt()
             if (scrollView.height > maxH) {
@@ -298,19 +379,17 @@ class BorderlineOverlayController(
         }
 
         closeBtn.setOnClickListener {
-            performHapticTick(view)
+            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_LIGHT)
             animatePanelOut(view)
         }
 
         addButton.setOnClickListener {
-            performHapticTick(view)
+            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_LIGHT)
             showSnippetEditForm(view, null)
         }
 
-        // Populate list
         refreshSnippetList(view, null)
 
-        // Search filter
         searchField.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -320,7 +399,6 @@ class BorderlineOverlayController(
             }
         })
 
-        // Make panel focusable when search field gains focus
         searchField.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) setPanelFocusable(true)
         }
@@ -364,19 +442,18 @@ class BorderlineOverlayController(
         titleView.text = snippet.title
         previewView.text = snippet.content.take(PREVIEW_LENGTH)
 
-        // Tap on content area → copy to clipboard
         itemView.findViewById<View>(R.id.snippetItemContent).setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_CONFIRM)
             copyToClipboard(snippet.content)
         }
 
         editBtn.setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_LIGHT)
             showSnippetEditForm(panelView, snippet)
         }
 
         deleteBtn.setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_REJECT)
             overlayScope.launch {
                 snippetRepo.delete(snippet.id)
                 refreshSnippetList(panelView, currentSearchQuery(panelView))
@@ -404,7 +481,6 @@ class BorderlineOverlayController(
         val cancelBtn = panelView.findViewById<View>(R.id.snippetEditCancel)
         val saveBtn = panelView.findViewById<View>(R.id.snippetEditSave)
 
-        // Switch to edit mode
         listSection.visibility = View.GONE
         addButton.visibility = View.GONE
         searchField.visibility = View.GONE
@@ -427,24 +503,26 @@ class BorderlineOverlayController(
         titleField.requestFocus()
 
         cancelBtn.setOnClickListener {
-            performHapticTick(panelView)
+            BorderlineMotion.haptic(panelView, BorderlineMotion.HAPTIC_LIGHT)
             hideSnippetEditForm(panelView)
         }
 
         saveBtn.setOnClickListener {
-            performHapticTick(panelView)
             val title = titleField.text.toString().trim()
             val content = contentField.text.toString().trim()
 
             if (title.isEmpty()) {
+                BorderlineMotion.haptic(panelView, BorderlineMotion.HAPTIC_REJECT)
                 Toast.makeText(context, R.string.snippet_title_required, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (content.isEmpty()) {
+                BorderlineMotion.haptic(panelView, BorderlineMotion.HAPTIC_REJECT)
                 Toast.makeText(context, R.string.snippet_content_required, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            BorderlineMotion.haptic(panelView, BorderlineMotion.HAPTIC_CONFIRM)
             overlayScope.launch {
                 val existingId = editingSnippetId
                 if (existingId != null) {
@@ -490,32 +568,27 @@ class BorderlineOverlayController(
         val copyScreenBtn = view.findViewById<View>(R.id.clipperCopyScreenButton)
 
         closeBtn.setOnClickListener {
-            performHapticTick(view)
+            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_LIGHT)
             animatePanelOut(view)
         }
 
-        // Auto-grab clipboard content
         val grabbed = ClipboardGrabber.grab(context)
         if (grabbed != null) {
             overlayScope.launch { transferRepo.add(grabbed) }
-            // Show grab feedback
             grabStatus.visibility = View.VISIBLE
             grabText.text = context.getString(R.string.grab_success)
-            // Auto-hide feedback after a delay
-            mainHandler.postDelayed({ grabStatus.visibility = View.GONE }, GRAB_FEEDBACK_MS)
+            mainHandler.postDelayed({ grabStatus.visibility = View.GONE }, BorderlineMotion.GRAB_FEEDBACK_MS)
         }
 
-        // Quick actions
         copyPackageBtn.setOnClickListener {
-            performHapticTick(view)
+            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_CONFIRM)
             copyCurrentPackage()
         }
         copyScreenBtn.setOnClickListener {
-            performHapticTick(view)
+            BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_CONFIRM)
             copyCurrentScreen()
         }
 
-        // Constrain scroll height
         val scrollView = view.findViewById<ScrollView>(R.id.clipperScrollView)
         scrollView.post {
             val maxH = (context.resources.displayMetrics.heightPixels * 0.40f).toInt()
@@ -524,7 +597,6 @@ class BorderlineOverlayController(
             }
         }
 
-        // Populate clipboard history
         refreshClipperList(view)
 
         return view
@@ -557,21 +629,19 @@ class BorderlineOverlayController(
         previewView.text = item.preview.take(PREVIEW_LENGTH)
         timestampView.text = formatRelativeTime(item.timestamp)
 
-        // Pin visual indicator
         if (item.pinned) {
             pinBtn.alpha = 1.0f
         } else {
             pinBtn.alpha = 0.4f
         }
 
-        // Tap on content area → copy to clipboard
         itemView.findViewById<View>(R.id.transferItemContent).setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_CONFIRM)
             copyToClipboard(item.preview)
         }
 
         pinBtn.setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_CONFIRM)
             overlayScope.launch {
                 transferRepo.pin(item.id, !item.pinned)
                 refreshClipperList(panelView)
@@ -581,7 +651,7 @@ class BorderlineOverlayController(
         }
 
         deleteBtn.setOnClickListener {
-            performHapticTick(itemView)
+            BorderlineMotion.haptic(itemView, BorderlineMotion.HAPTIC_REJECT)
             overlayScope.launch {
                 transferRepo.delete(item.id)
                 refreshClipperList(panelView)
@@ -625,98 +695,12 @@ class BorderlineOverlayController(
 
     // ── Animation helpers ────────────────────────────────────
 
-    private fun startHandleBreathing(view: View) {
-        val breathe = ValueAnimator.ofFloat(0.65f, 0.82f, 0.65f).apply {
-            duration = 4800
-            interpolator = DecelerateInterpolator(1.0f)
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.RESTART
-            addUpdateListener { anim ->
-                view.alpha = anim.animatedValue as Float
-            }
-        }
-        handleBreathers[view.hashCode()] = breathe
-        breathe.start()
-    }
-
-    private fun stopHandleBreathing(view: View) {
-        handleBreathers.remove(view.hashCode())?.cancel()
-    }
-
-    private fun animatePanelIn(view: View, zone: HandleZone) {
-        val isLeft = zone == HandleZone.SNIPPETS
-        val translationStart = if (isLeft) -24f else 24f
-
-        view.alpha = 0f
-        view.translationX = translationStart
-        view.translationY = -8f
-        view.scaleX = 0.97f
-        view.scaleY = 0.97f
-
-        val fadeIn = ObjectAnimator.ofFloat(view, "alpha", 0f, 1f)
-        val slideInX = ObjectAnimator.ofFloat(view, "translationX", translationStart, 0f)
-        val slideInY = ObjectAnimator.ofFloat(view, "translationY", -8f, 0f)
-        val scaleX = ObjectAnimator.ofFloat(view, "scaleX", 0.97f, 1f)
-        val scaleY = ObjectAnimator.ofFloat(view, "scaleY", 0.97f, 1f)
-
-        AnimatorSet().apply {
-            playTogether(fadeIn, slideInX, slideInY, scaleX, scaleY)
-            duration = 280
-            interpolator = DecelerateInterpolator(1.8f)
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: android.animation.Animator) {
-                    applyPanelBlur(view)
-                }
-            })
-            start()
-        }
-    }
-
     private fun animatePanelOut(view: View) {
-        val fadeOut = ObjectAnimator.ofFloat(view, "alpha", 1f, 0f)
-        val slideOutY = ObjectAnimator.ofFloat(view, "translationY", 0f, -6f)
-        val scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 0.97f)
-        val scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 0.97f)
-
-        AnimatorSet().apply {
-            playTogether(fadeOut, slideOutY, scaleX, scaleY)
-            duration = 200
-            interpolator = DecelerateInterpolator(1.5f)
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: android.animation.Animator) {
-                    hidePanel()
-                }
-            })
-            start()
-        }
-    }
-
-    private fun applyPanelBlur(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            view.setRenderEffect(
-                RenderEffect.createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
-            )
-        }
-    }
-
-    // ── Haptic feedback helpers ──────────────────────────────
-
-    private fun performHapticTick(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        } else {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        }
-    }
-
-    private fun performHapticHeavy(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-        } else {
-            @Suppress("DEPRECATION")
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            vibrator?.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
-        }
+        panelAnimator?.cancel()
+        dimHandles() // keep dimmed until removal
+        panelAnimator = BorderlineMotion.panelOut(view) {
+            hidePanel()
+        }.also { it.start() }
     }
 
     // ── Safe WindowManager operations ────────────────────────
@@ -755,6 +739,5 @@ class BorderlineOverlayController(
 
     companion object {
         private const val PREVIEW_LENGTH = 80
-        private const val GRAB_FEEDBACK_MS = 2000L
     }
 }
