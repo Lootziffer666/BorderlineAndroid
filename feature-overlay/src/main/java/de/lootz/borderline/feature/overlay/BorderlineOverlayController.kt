@@ -2,11 +2,11 @@ package de.lootz.borderline.feature.overlay
 
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.PixelFormat
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
@@ -22,6 +22,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.content.res.AppCompatResources
 import de.lootz.borderline.core.AccessibilityStateStore
 import de.lootz.borderline.core.BorderlineLogger
 import de.lootz.borderline.core.ClipboardGrabber
@@ -39,6 +40,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
+@SuppressLint("ClickableViewAccessibility", "InflateParams")
 class BorderlineOverlayController(
     private val context: Context,
     private val modulePrefs: ModulePrefs
@@ -63,10 +65,10 @@ class BorderlineOverlayController(
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    /** Active breathing animators per handle — cancelled on touch, resumed on idle. */
+    /** Active breathing animators per handle — canceled on touch, resumed on idle. */
     private val breatheAnimators = mutableMapOf<HandleZone, ValueAnimator>()
 
-    /** Active panel-in/out animator — cancelled if panel toggles rapidly. */
+    /** Active panel-in/out animator — canceled if panel toggles rapidly. */
     private var panelAnimator: AnimatorSet? = null
 
     init {
@@ -92,25 +94,29 @@ class BorderlineOverlayController(
 
     private fun showHandles() {
         HandleZone.entries.forEach { zone ->
-            val view = LayoutInflater.from(context).inflate(R.layout.view_edge_handle, null)
+            val view = View.inflate(context, R.layout.view_edge_handle, null)
             val label = view.findViewById<TextView>(R.id.handleLabel)
             label.text = when (zone) {
                 HandleZone.SNIPPETS -> context.getString(R.string.handle_label_snippets)
                 HandleZone.CLIPPER -> context.getString(R.string.handle_label_clipper)
             }
             val isLeft = zone == HandleZone.SNIPPETS
-            view.background = context.getDrawable(
+            view.background = AppCompatResources.getDrawable(
+                context,
                 if (isLeft) R.drawable.bg_edge_handle_left else R.drawable.bg_edge_handle_right
             )
             view.contentDescription = context.getString(R.string.handle_content_desc_format, label.text)
 
             val haloOverlay = view.findViewById<View>(R.id.handleHalo)
 
-            @Suppress("ClickableViewAccessibility")
             view.setOnTouchListener(object : View.OnTouchListener {
                 private var isPressed = false
+                private var detector: EdgeSwipeDetector? = null
 
                 override fun onTouch(v: View, event: MotionEvent): Boolean {
+                    if (detector == null) {
+                        detector = gestureDetector(zone, isLeft)
+                    }
                     when (event.actionMasked) {
                         MotionEvent.ACTION_DOWN -> {
                             isPressed = true
@@ -118,7 +124,15 @@ class BorderlineOverlayController(
                             showHalo(haloOverlay)
                             BorderlineMotion.haptic(view, BorderlineMotion.HAPTIC_LIGHT)
                         }
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP -> {
+                            if (isPressed) {
+                                isPressed = false
+                                hideHalo(haloOverlay)
+                                startBreathing(zone, view)
+                                v.performClick()
+                            }
+                        }
+                        MotionEvent.ACTION_CANCEL -> {
                             if (isPressed) {
                                 isPressed = false
                                 hideHalo(haloOverlay)
@@ -127,7 +141,7 @@ class BorderlineOverlayController(
                         }
                     }
                     // Delegate gesture detection
-                    return gestureDetector(zone, isLeft).onTouchEvent(event)
+                    return detector!!.onTouch(v, event)
                 }
             })
 
@@ -219,7 +233,7 @@ class BorderlineOverlayController(
         halo?.animate()
             ?.alpha(0f)
             ?.setDuration(BorderlineMotion.HALO_OUT_DURATION)
-            ?.withEndAction { halo?.visibility = View.INVISIBLE }
+            ?.withEndAction { halo.visibility = View.INVISIBLE }
             ?.start()
     }
 
@@ -362,13 +376,11 @@ class BorderlineOverlayController(
     // ── Snippet panel ────────────────────────────────────────
 
     private fun buildSnippetPanel(): View {
-        val view = LayoutInflater.from(context).inflate(R.layout.view_snippet_panel, null)
+        val view = View.inflate(context, R.layout.view_snippet_panel, null)
 
         val closeBtn = view.findViewById<View>(R.id.snippetCloseButton)
         val searchField = view.findViewById<EditText>(R.id.snippetSearchField)
-        val listContainer = view.findViewById<LinearLayout>(R.id.snippetListContainer)
         val scrollView = view.findViewById<ScrollView>(R.id.snippetScrollView)
-        val emptyState = view.findViewById<TextView>(R.id.snippetEmptyState)
         val addButton = view.findViewById<View>(R.id.snippetAddButton)
 
         scrollView.post {
@@ -559,7 +571,7 @@ class BorderlineOverlayController(
     // ── Clipper panel ────────────────────────────────────────
 
     private fun buildClipperPanel(): View {
-        val view = LayoutInflater.from(context).inflate(R.layout.view_clipper_panel, null)
+        val view = View.inflate(context, R.layout.view_clipper_panel, null)
 
         val closeBtn = view.findViewById<View>(R.id.clipperCloseButton)
         val grabStatus = view.findViewById<View>(R.id.clipperGrabStatus)
@@ -722,12 +734,8 @@ class BorderlineOverlayController(
     }
 
     private fun baseParams(): WindowManager.LayoutParams {
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val type =
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
-        }
         return WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
