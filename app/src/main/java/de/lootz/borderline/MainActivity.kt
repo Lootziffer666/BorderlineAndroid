@@ -1,19 +1,19 @@
 package de.lootz.borderline
 
-import androidx.appcompat.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.lootz.borderline.core.DeviceCompatibility
 import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
@@ -21,11 +21,11 @@ import de.lootz.borderline.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private enum class SetupStep {
-        Welcome,
-        Permissions,
-        QuickStart,
-        Customize
+    private sealed class SetupStep {
+        data object Welcome : SetupStep()
+        data object Permissions : SetupStep()
+        data object QuickStart : SetupStep()
+        data object Customize : SetupStep()
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupActionButtons() {
+        binding.backButton.setOnClickListener { finish() }
         binding.openAccessibilitySettingsButton.setOnClickListener { openAccessibilitySettings() }
         binding.restartSetupButton.setOnClickListener {
             appUiPrefs.resetSetup()
@@ -103,27 +104,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderStatus() {
-        val ready = isAccessibilityServiceEnabled() && modulePrefs.isEnabled(ModuleId.OVERLAY)
-        binding.headlineText.setText(
-            if (ready) R.string.settings_ready_title else R.string.settings_attention_title
+        binding.shortcutsStateText.text = getString(
+            if (modulePrefs.isEnabled(ModuleId.SHORTCUTS)) R.string.status_on_cap else R.string.status_off_cap
         )
-
-        binding.accessibilityStatus.setText(
-            if (isAccessibilityServiceEnabled()) {
-                R.string.status_accessibility_active
-            } else {
-                R.string.status_accessibility_inactive
-            }
-        )
-
-        val snapshot = modulePrefs.snapshot()
-        binding.moduleStatus.text = snapshot
-            .filterKeys { it != ModuleId.ACCESSIBILITY }
-            .entries
-            .joinToString(separator = "\n") { (id, enabled) ->
-                val stateText = getString(if (enabled) R.string.status_on else R.string.status_off)
-                getString(R.string.status_module_format, id.displayName, stateText)
-            }
     }
 
     private fun setupXiaomiCard() {
@@ -157,117 +140,146 @@ class MainActivity : AppCompatActivity() {
             SetupStep.QuickStart,
             SetupStep.Customize
         )
-        var currentStepIndex = 0
+        var currentStep = 0
 
-        fun showStep() {
-            val step = steps[currentStepIndex]
+        fun showStep(step: SetupStep) {
             val view = buildStepView(step)
             setupDialog?.dismiss()
-            setupDialog = MaterialAlertDialogBuilder(this)
-                .setTitle(getString(R.string.setup_dialog_title, currentStepIndex + 1, steps.size))
+            setupDialog = AlertDialog.Builder(this)
                 .setView(view)
-                .setCancelable(false)
                 .setNegativeButton(
-                    if (currentStepIndex == 0) getString(R.string.action_skip) else getString(R.string.action_back)
+                    if (currentStep == 0) getString(R.string.action_skip) else getString(R.string.action_back)
                 ) { _, _ ->
-                    if (currentStepIndex == 0) {
-                        appUiPrefs.markSetupComplete()
+                    if (currentStep > 0) {
+                        currentStep--
+                        showStep(steps[currentStep])
                     } else {
-                        currentStepIndex -= 1
-                        showStep()
+                        appUiPrefs.markSetupComplete()
+                        renderStatus()
                     }
                 }
                 .setPositiveButton(
-                    if (currentStepIndex == steps.lastIndex) getString(R.string.action_finish) else getString(R.string.action_continue)
+                    if (currentStep == steps.lastIndex) getString(R.string.action_finish) else getString(R.string.action_next)
                 ) { _, _ ->
-                    if (currentStepIndex == steps.lastIndex) {
-                        appUiPrefs.markSetupComplete()
-                        renderStatus()
+                    if (currentStep < steps.lastIndex) {
+                        currentStep++
+                        showStep(steps[currentStep])
                     } else {
-                        currentStepIndex += 1
-                        showStep()
+                        appUiPrefs.markSetupComplete()
+                        syncModuleSwitches()
+                        renderStatus()
                     }
                 }
+                .setCancelable(false)
                 .show()
         }
 
-        showStep()
+        showStep(steps[0])
     }
 
-    private fun buildStepView(step: SetupStep): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(18.dp, 8.dp, 18.dp, 0)
-            when (step) {
-                SetupStep.Welcome -> {
-                    addHeading(getString(R.string.onboarding_welcome_title))
-                    addBody(getString(R.string.onboarding_welcome_body))
-                }
-
-                SetupStep.Permissions -> {
-                    addHeading(getString(R.string.onboarding_permissions_title))
-                    addPermissionCheck(getString(R.string.onboarding_permission_accessibility), isAccessibilityServiceEnabled())
-                    addPermissionCheck(getString(R.string.onboarding_permission_overlay), modulePrefs.isEnabled(ModuleId.OVERLAY))
-                    addBody(getString(R.string.onboarding_permissions_body), topMarginDp = 12)
-                }
-
-                SetupStep.QuickStart -> {
-                    addHeading(getString(R.string.onboarding_quickstart_title))
-                    addBody(getString(R.string.onboarding_quickstart_body))
-                }
-
-                SetupStep.Customize -> {
-                    addHeading(getString(R.string.onboarding_customize_title))
-                    addBody(getString(R.string.onboarding_customize_body))
-                    addView(CheckBox(context).apply {
-                        text = getString(R.string.module_overlay_label)
-                        isChecked = modulePrefs.isEnabled(ModuleId.OVERLAY)
-                        setOnCheckedChangeListener { _, checked ->
-                            modulePrefs.setEnabled(ModuleId.OVERLAY, checked)
-                            if (!checked) modulePrefs.setEnabled(ModuleId.SHORTCUTS, false)
-                        }
-                    })
-                    addView(CheckBox(context).apply {
-                        text = getString(R.string.module_shortcuts_label)
-                        isChecked = modulePrefs.isEnabled(ModuleId.SHORTCUTS)
-                        isEnabled = modulePrefs.isEnabled(ModuleId.OVERLAY)
-                        setOnCheckedChangeListener { _, checked ->
-                            modulePrefs.setEnabled(
-                                ModuleId.SHORTCUTS,
-                                checked && modulePrefs.isEnabled(ModuleId.OVERLAY)
-                            )
-                        }
-                    })
-                }
-            }
+    private fun buildStepView(step: SetupStep): View {
+        return when (step) {
+            SetupStep.Welcome -> buildWelcomeView()
+            SetupStep.Permissions -> buildPermissionsView()
+            SetupStep.QuickStart -> buildQuickStartView()
+            SetupStep.Customize -> buildCustomizeView()
         }
     }
 
-    private fun LinearLayout.addHeading(text: String) {
-        addView(TextView(context).apply {
-            this.text = text
-            textSize = 20f
-            setTypeface(null, Typeface.BOLD)
-        })
+    private fun buildWelcomeView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_welcome_title)
+                textSize = 24f
+                setTypeface(null, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(16.dp, 16.dp, 16.dp, 8.dp) }
+            })
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_welcome_body)
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(16.dp, 8.dp, 16.dp, 16.dp) }
+            })
+        }
     }
 
-    private fun LinearLayout.addBody(text: String, topMarginDp: Int = 10) {
-        addView(TextView(context).apply {
-            this.text = text
-            textSize = 14f
-            setTextColor(Color.DKGRAY)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = topMarginDp.dp
-            }
-        })
+    private fun buildPermissionsView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_permissions_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addPermissionCheck(getString(R.string.snippet_permission_accessibility), isAccessibilityServiceEnabled())
+            addPermissionCheck(getString(R.string.snippet_permission_clipboard), true)
+            addPermissionCheck(getString(R.string.snippet_permission_overlay), modulePrefs.isEnabled(ModuleId.OVERLAY))
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_permissions_footer)
+                textSize = 12f
+                setTextColor(Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 16.dp, 0, 0) }
+            })
+        }
+    }
+
+    private fun buildQuickStartView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_quickstart_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_quickstart_body)
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 16.dp, 0, 0) }
+            })
+        }
+    }
+
+    private fun buildCustomizeView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_customize_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_adaptive_actions)
+                isChecked = true
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_clipboard_autograb)
+                isChecked = true
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_haptics)
+                isChecked = true
+            })
+        }
     }
 
     private fun LinearLayout.addPermissionCheck(text: String, isChecked: Boolean) {
         addView(CheckBox(context).apply {
-            this.text = text
+            this.text = "✓ $text"
             this.isChecked = isChecked
             isEnabled = false
         })
@@ -285,7 +297,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHyperOsAccessibilityGuide() {
-        MaterialAlertDialogBuilder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(R.string.hyperos_accessibility_guide_title)
             .setView(R.layout.dialog_hyperos_accessibility_guide)
             .setNegativeButton(android.R.string.cancel, null)

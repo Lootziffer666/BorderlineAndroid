@@ -97,4 +97,31 @@
     <string name="onboarding_customize_title">Anpassen</string>
     <string name="onboarding_customize_body">Aktiviere genau die Module, die du im Alltag wirklich brauchst.</string>
 
+
+    <string name="action_next">Next</string>
+    <string name="module_enable_borderline">Borderline verwenden</string>
+    <string name="options">Optionen</string>
+    <string name="module_shortcuts_label_full">Kurzbefehl für Borderline</string>
+    <string name="app_info">App-Info</string>
+    <string name="status_on_cap">An</string>
+    <string name="status_off_cap">Aus</string>
+
+    <string name="snippet_welcome_title">Welcome to Borderline</string>
+    <string name="snippet_welcome_body">Accessibility-Overlay für schnellere Textbearbeitung, Clipboard-Verwaltung und Smart Actions.</string>
+    <string name="snippet_permissions_title">Erforderliche Berechtigungen</string>
+    <string name="snippet_permission_accessibility">Accessibility Service</string>
+    <string name="snippet_permission_clipboard">Clipboard-Zugriff</string>
+    <string name="snippet_permission_overlay">Overlay-Fenster</string>
+    <string name="snippet_permissions_footer">Diese werden bei Aktivierung automatisch eingefordert.</string>
+    <string name="snippet_quickstart_title">Quick Start</string>
+    <string name="snippet_quickstart_body">Wische von der Seite um die Menüs zu öffnen:
+
+← Links: Snippets &amp; Clipboard
+→ Rechts: Shortcuts &amp; Quick Actions
+
+Halte länger um zu bearbeiten.</string>
+    <string name="snippet_customize_title">Anpassen</string>
+    <string name="snippet_customize_adaptive_actions">Adaptive Quick Actions aktivieren</string>
+    <string name="snippet_customize_clipboard_autograb">Clipboard-Auto-Grab</string>
+    <string name="snippet_customize_haptics">Haptic Feedback</string>
 </resources>
