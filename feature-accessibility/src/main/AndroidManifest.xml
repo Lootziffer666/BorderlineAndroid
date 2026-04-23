@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <service
-            android:name="de.lootz.borderline.feature.accessibility.BorderlineAccessibilityService"
+            android:name="com.borderline.feature.accessibility.BorderlineAccessibilityService"
             android:description="@string/accessibility_service_description"
             android:exported="false"
             android:label="@string/accessibility_service_label"
