@@ -2,13 +2,17 @@ package de.lootz.borderline
 
 import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.widget.CheckBox
 import android.widget.CompoundButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.lootz.borderline.core.DeviceCompatibility
 import de.lootz.borderline.core.ModuleId
 import de.lootz.borderline.core.ModulePrefs
@@ -16,30 +20,19 @@ import de.lootz.borderline.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private enum class SetupStep {
-        WELCOME,
-        ACCESSIBILITY,
-        MODULES,
-        OEM_HELP,
-        FINISH
+    private sealed class SetupStep {
+        data object Welcome : SetupStep()
+        data object Permissions : SetupStep()
+        data object QuickStart : SetupStep()
+        data object Customize : SetupStep()
     }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var modulePrefs: ModulePrefs
     private lateinit var appUiPrefs: AppUiPrefs
 
-    private val setupSteps: List<SetupStep> by lazy {
-        buildList {
-            add(SetupStep.WELCOME)
-            add(SetupStep.ACCESSIBILITY)
-            add(SetupStep.MODULES)
-            if (DeviceCompatibility.isXiaomi()) add(SetupStep.OEM_HELP)
-            add(SetupStep.FINISH)
-        }
-    }
-
-    private var currentStepIndex = 0
     private var suppressSwitchCallbacks = false
+    private var setupDialog: androidx.appcompat.app.AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,64 +43,29 @@ class MainActivity : AppCompatActivity() {
         appUiPrefs = AppUiPrefs(this)
 
         setupModuleSwitches()
-        setupWizardNavigation()
         setupActionButtons()
-        setupXiaomiCards()
+        setupXiaomiCard()
     }
 
     override fun onResume() {
         super.onResume()
         syncModuleSwitches()
-        renderCurrentEntryPoint()
-    }
-
-    private fun renderCurrentEntryPoint() {
-        if (appUiPrefs.isSetupComplete()) {
-            renderSettings()
-        } else {
-            renderWizard()
-        }
+        renderStatus()
+        showSetupDialogIfNeeded()
     }
 
     private fun setupActionButtons() {
-        binding.openAccessibilitySettingsButton.setOnClickListener {
-            openAccessibilitySettings()
-        }
+        binding.backButton.setOnClickListener { finish() }
+        binding.openAccessibilitySettingsButton.setOnClickListener { openAccessibilitySettings() }
         binding.restartSetupButton.setOnClickListener {
             appUiPrefs.resetSetup()
-            currentStepIndex = 0
-            renderWizard()
-        }
-        binding.wizardPrimaryActionButton.setOnClickListener {
-            openAccessibilitySettings()
-        }
-    }
-
-    private fun setupWizardNavigation() {
-        binding.wizardBackButton.setOnClickListener {
-            if (currentStepIndex > 0) {
-                currentStepIndex -= 1
-                renderWizard()
-            }
-        }
-
-        binding.wizardNextButton.setOnClickListener {
-            val lastStep = currentStepIndex == setupSteps.lastIndex
-            if (lastStep) {
-                appUiPrefs.markSetupComplete()
-                finish()
-            } else {
-                currentStepIndex += 1
-                renderWizard()
-            }
+            showSetupDialogIfNeeded(force = true)
         }
     }
 
     private fun setupModuleSwitches() {
-        bindOverlaySwitch(binding.wizardOverlaySwitch)
-        bindOverlaySwitch(binding.settingsOverlaySwitch)
-        bindShortcutsSwitch(binding.wizardShortcutsSwitch)
-        bindShortcutsSwitch(binding.settingsShortcutsSwitch)
+        bindOverlaySwitch(binding.overlaySwitch)
+        bindShortcutsSwitch(binding.shortcutsSwitch)
         syncModuleSwitches()
     }
 
@@ -119,7 +77,7 @@ class MainActivity : AppCompatActivity() {
                 modulePrefs.setEnabled(ModuleId.SHORTCUTS, false)
             }
             syncModuleSwitches()
-            renderCurrentEntryPoint()
+            renderStatus()
         }
     }
 
@@ -129,7 +87,7 @@ class MainActivity : AppCompatActivity() {
             val overlayEnabled = modulePrefs.isEnabled(ModuleId.OVERLAY)
             modulePrefs.setEnabled(ModuleId.SHORTCUTS, checked && overlayEnabled)
             syncModuleSwitches()
-            renderCurrentEntryPoint()
+            renderStatus()
         }
     }
 
@@ -138,174 +96,196 @@ class MainActivity : AppCompatActivity() {
         val shortcutsEnabled = modulePrefs.isEnabled(ModuleId.SHORTCUTS)
 
         suppressSwitchCallbacks = true
-        binding.wizardOverlaySwitch.isChecked = overlayEnabled
-        binding.settingsOverlaySwitch.isChecked = overlayEnabled
-        binding.wizardShortcutsSwitch.isChecked = shortcutsEnabled
-        binding.settingsShortcutsSwitch.isChecked = shortcutsEnabled
-        binding.wizardShortcutsSwitch.isEnabled = overlayEnabled
-        binding.settingsShortcutsSwitch.isEnabled = overlayEnabled
+        binding.overlaySwitch.isChecked = overlayEnabled
+        binding.shortcutsSwitch.isChecked = shortcutsEnabled
+        binding.shortcutsSwitch.isEnabled = overlayEnabled
         suppressSwitchCallbacks = false
     }
 
-    private fun setupXiaomiCards() {
-        val isXiaomi = DeviceCompatibility.isXiaomi()
-        binding.wizardXiaomiCard.isVisible = false
-        binding.settingsXiaomiCard.isVisible = false
+    private fun renderStatus() {
+        binding.shortcutsStateText.text = getString(
+            if (modulePrefs.isEnabled(ModuleId.SHORTCUTS)) R.string.status_on_cap else R.string.status_off_cap
+        )
+    }
 
+    private fun setupXiaomiCard() {
+        val isXiaomi = DeviceCompatibility.isXiaomi()
+        binding.xiaomiCard.isVisible = isXiaomi
         if (!isXiaomi) return
 
         val hyperOsVersion = DeviceCompatibility.getHyperOSVersion()
         if (hyperOsVersion != null) {
-            val title = getString(R.string.xiaomi_hyperos_title_format, hyperOsVersion)
-            binding.wizardXiaomiTitle.text = title
-            binding.settingsXiaomiTitle.text = title
+            binding.xiaomiTitle.text = getString(R.string.xiaomi_hyperos_title_format, hyperOsVersion)
         }
 
-        val openAutostart = View.OnClickListener {
+        binding.openAutostartButton.setOnClickListener {
             DeviceCompatibility.openXiaomiAutoStartSettings(this)
         }
-        val openPermissions = View.OnClickListener {
+        binding.openOtherPermissionsButton.setOnClickListener {
             DeviceCompatibility.openXiaomiOtherPermissions(this)
         }
-        val openBattery = View.OnClickListener {
+        binding.openBatteryOptimizationButton.setOnClickListener {
             DeviceCompatibility.openBatteryOptimizationSettings(this)
         }
-
-        binding.wizardOpenAutostartButton.setOnClickListener(openAutostart)
-        binding.settingsOpenAutostartButton.setOnClickListener(openAutostart)
-        binding.wizardOpenOtherPermissionsButton.setOnClickListener(openPermissions)
-        binding.settingsOpenOtherPermissionsButton.setOnClickListener(openPermissions)
-        binding.wizardOpenBatteryOptimizationButton.setOnClickListener(openBattery)
-        binding.settingsOpenBatteryOptimizationButton.setOnClickListener(openBattery)
     }
 
-    private fun renderWizard() {
-        binding.setupContainer.isVisible = true
-        binding.settingsContainer.isVisible = false
+    private fun showSetupDialogIfNeeded(force: Boolean = false) {
+        if (!force && appUiPrefs.isSetupComplete()) return
+        if (setupDialog?.isShowing == true) return
 
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        val step = setupSteps[currentStepIndex]
-
-        binding.wizardStepCounter.text = getString(
-            R.string.wizard_step_counter,
-            currentStepIndex + 1,
-            setupSteps.size
+        val steps = listOf(
+            SetupStep.Welcome,
+            SetupStep.Permissions,
+            SetupStep.QuickStart,
+            SetupStep.Customize
         )
-        binding.wizardBackButton.isVisible = currentStepIndex > 0
-        binding.wizardModulesCard.isVisible = step == SetupStep.MODULES
-        binding.wizardXiaomiCard.isVisible = step == SetupStep.OEM_HELP && DeviceCompatibility.isXiaomi()
-        binding.wizardSummaryCard.isVisible = step == SetupStep.FINISH
-        binding.wizardPrimaryActionButton.isVisible = false
-        binding.wizardStepHint.isVisible = true
+        var currentStep = 0
 
-        when (step) {
-            SetupStep.WELCOME -> {
-                binding.wizardStepTitle.setText(R.string.wizard_welcome_title)
-                binding.wizardStepBody.setText(R.string.wizard_welcome_body)
-                binding.wizardStepHint.text = getString(R.string.settings_intro)
-                binding.wizardNextButton.setText(R.string.action_continue)
-                binding.wizardNextButton.isEnabled = true
-            }
-
-            SetupStep.ACCESSIBILITY -> {
-                binding.wizardStepTitle.setText(R.string.wizard_accessibility_title)
-                binding.wizardStepBody.setText(R.string.wizard_accessibility_body)
-                binding.wizardStepHint.text = getString(
-                    if (serviceEnabled) {
-                        R.string.wizard_accessibility_ready_hint
+        fun showStep(step: SetupStep) {
+            val view = buildStepView(step)
+            setupDialog?.dismiss()
+            setupDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(view)
+                .setNegativeButton(
+                    if (currentStep == 0) getString(R.string.action_skip) else getString(R.string.action_back)
+                ) { _, _ ->
+                    if (currentStep > 0) {
+                        currentStep--
+                        showStep(steps[currentStep])
                     } else {
-                        R.string.wizard_accessibility_missing_hint
+                        appUiPrefs.markSetupComplete()
+                        renderStatus()
                     }
-                )
-                binding.wizardPrimaryActionButton.isVisible = true
-                binding.wizardNextButton.setText(R.string.action_continue)
-                binding.wizardNextButton.isEnabled = true
-            }
-
-            SetupStep.MODULES -> {
-                binding.wizardStepTitle.setText(R.string.wizard_modules_title)
-                binding.wizardStepBody.setText(R.string.wizard_modules_body)
-                binding.wizardStepHint.setText(R.string.wizard_modules_hint)
-                binding.wizardNextButton.setText(R.string.action_continue)
-                binding.wizardNextButton.isEnabled = true
-            }
-
-            SetupStep.OEM_HELP -> {
-                binding.wizardStepTitle.setText(R.string.wizard_xiaomi_title)
-                binding.wizardStepBody.setText(R.string.wizard_xiaomi_body)
-                binding.wizardStepHint.setText(R.string.wizard_xiaomi_hint)
-                binding.wizardNextButton.setText(R.string.action_continue)
-                binding.wizardNextButton.isEnabled = true
-            }
-
-            SetupStep.FINISH -> {
-                binding.wizardStepTitle.setText(
-                    if (isReadyForDailyUse()) {
-                        R.string.wizard_finish_ready_title
+                }
+                .setPositiveButton(
+                    if (currentStep == steps.lastIndex) getString(R.string.action_finish) else getString(R.string.action_next)
+                ) { _, _ ->
+                    if (currentStep < steps.lastIndex) {
+                        currentStep++
+                        showStep(steps[currentStep])
                     } else {
-                        R.string.wizard_finish_attention_title
+                        appUiPrefs.markSetupComplete()
+                        syncModuleSwitches()
+                        renderStatus()
                     }
-                )
-                binding.wizardStepBody.setText(
-                    if (isReadyForDailyUse()) {
-                        R.string.wizard_finish_ready_body
-                    } else {
-                        R.string.wizard_finish_attention_body
-                    }
-                )
-                binding.wizardStepHint.setText(R.string.wizard_finish_hint)
-                binding.wizardNextButton.setText(R.string.action_finish)
-                binding.wizardNextButton.isEnabled = true
-                renderStatusTexts(binding.wizardAccessibilityStatus, binding.wizardModuleStatus)
-                binding.wizardPrimaryActionButton.isVisible = !serviceEnabled
-            }
+                }
+                .setCancelable(false)
+                .show()
+        }
+
+        showStep(steps[0])
+    }
+
+    private fun buildStepView(step: SetupStep): View {
+        return when (step) {
+            SetupStep.Welcome -> buildWelcomeView()
+            SetupStep.Permissions -> buildPermissionsView()
+            SetupStep.QuickStart -> buildQuickStartView()
+            SetupStep.Customize -> buildCustomizeView()
         }
     }
 
-    private fun renderSettings() {
-        binding.setupContainer.isVisible = false
-        binding.settingsContainer.isVisible = true
-
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        val ready = isReadyForDailyUse()
-
-        binding.settingsTitle.setText(
-            if (ready) R.string.settings_ready_title else R.string.settings_attention_title
-        )
-        binding.settingsBody.setText(
-            if (ready) R.string.settings_ready_body else R.string.settings_attention_body
-        )
-        binding.settingsXiaomiCard.isVisible = DeviceCompatibility.isXiaomi()
-        binding.openAccessibilitySettingsButton.text = getString(
-            if (serviceEnabled) {
-                R.string.open_accessibility_settings
-            } else {
-                R.string.open_accessibility_settings
-            }
-        )
-
-        renderStatusTexts(binding.accessibilityStatus, binding.moduleStatus)
+    private fun buildWelcomeView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_welcome_title)
+                textSize = 24f
+                setTypeface(null, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(16.dp, 16.dp, 16.dp, 8.dp) }
+            })
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_welcome_body)
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(16.dp, 8.dp, 16.dp, 16.dp) }
+            })
+        }
     }
 
-    private fun renderStatusTexts(accessibilityView: android.widget.TextView, modulesView: android.widget.TextView) {
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        accessibilityView.setText(
-            if (serviceEnabled) R.string.status_accessibility_active else R.string.status_accessibility_inactive
-        )
-
-        val snapshot = modulePrefs.snapshot()
-        modulesView.text = snapshot
-            .filterKeys { it != ModuleId.ACCESSIBILITY }
-            .entries
-            .joinToString(separator = "\n") { (id, enabled) ->
-                val stateText = getString(if (enabled) R.string.status_on else R.string.status_off)
-                getString(R.string.status_module_format, id.displayName, stateText)
-            }
+    private fun buildPermissionsView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_permissions_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addPermissionCheck(getString(R.string.snippet_permission_accessibility), isAccessibilityServiceEnabled())
+            addPermissionCheck(getString(R.string.snippet_permission_clipboard), true)
+            addPermissionCheck(getString(R.string.snippet_permission_overlay), modulePrefs.isEnabled(ModuleId.OVERLAY))
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_permissions_footer)
+                textSize = 12f
+                setTextColor(Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 16.dp, 0, 0) }
+            })
+        }
     }
 
-    private fun isReadyForDailyUse(): Boolean {
-        return isAccessibilityServiceEnabled() && modulePrefs.isEnabled(ModuleId.OVERLAY)
+    private fun buildQuickStartView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_quickstart_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_quickstart_body)
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 16.dp, 0, 0) }
+            })
+        }
     }
+
+    private fun buildCustomizeView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16.dp, 16.dp, 16.dp, 0)
+            addView(TextView(context).apply {
+                text = getString(R.string.snippet_customize_title)
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_adaptive_actions)
+                isChecked = true
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_clipboard_autograb)
+                isChecked = true
+            })
+            addView(CheckBox(context).apply {
+                text = getString(R.string.snippet_customize_haptics)
+                isChecked = true
+            })
+        }
+    }
+
+    private fun LinearLayout.addPermissionCheck(text: String, isChecked: Boolean) {
+        addView(CheckBox(context).apply {
+            this.text = "✓ $text"
+            this.isChecked = isChecked
+            isEnabled = false
+        })
+    }
+
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 
     private fun openAccessibilitySettings() {
         if (DeviceCompatibility.isXiaomi()) {
@@ -316,7 +296,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHyperOsAccessibilityGuide() {
-        MaterialAlertDialogBuilder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(R.string.hyperos_accessibility_guide_title)
             .setView(R.layout.dialog_hyperos_accessibility_guide)
             .setNegativeButton(android.R.string.cancel, null)
