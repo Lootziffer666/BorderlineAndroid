@@ -7,6 +7,7 @@
     <string name="setup_intro">Einmal einrichten. Danach taucht dieses Fenster nur noch auf, wenn du das App-Icon bewusst öffnest.</string>
     <string name="wizard_step_counter">Schritt %1$d von %2$d</string>
     <string name="wizard_welcome_title">Borderline richtet stillen Schnellzugriff ein</string>
+    <string name="ui_preview_title">React-Style UX Vorschau (4 Swipe-Panels)</string>
     <string name="wizard_welcome_body">Im Alltag soll Borderline kaum sichtbar sein. Dieses Onboarding führt nur durch die Voraussetzungen, damit Overlay und Quick Actions später einfach da sind.</string>
 
     <string name="wizard_accessibility_title">Accessibility ist die Voraussetzung</string>
