@@ -1,66 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_root_gradient">
+    android:background="@drawable/bg_root_gradient"
+    android:fillViewport="true">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <TextView
+            android:id="@+id/headlineText"
             android:layout_width="match_parent"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+            android:layout_height="wrap_content"
+            android:text="@string/control_center_title"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            android:textColor="?attr/colorOnSurface" />
+=======
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             app:title="@string/app_name"
             app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
     </com.google.android.material.appbar.AppBarLayout>
+>>>>>>> main
 
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:fillViewport="true"
-        android:paddingBottom="24dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <LinearLayout
+        <TextView
+            android:id="@+id/sublineText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/control_center_subtitle"
+            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="24dp">
+=======
             android:orientation="vertical"
             android:paddingHorizontal="18dp"
             android:paddingTop="12dp">
+>>>>>>> main
 
             <LinearLayout
-                android:id="@+id/setupContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <TextView
-                    android:id="@+id/setupEyebrow"
+                    android:id="@+id/statusTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:text="@string/status_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+=======
                     android:text="@string/setup_eyebrow"
                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                     android:textColor="@color/primary" />
+>>>>>>> main
 
                 <TextView
-                    android:id="@+id/setupIntroText"
+                    android:id="@+id/accessibilityStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+=======
                     android:text="@string/setup_intro"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
                     android:textColor="?attr/colorOnSurfaceVariant" />
+>>>>>>> main
 
-                <com.google.android.material.card.MaterialCardView
+                <TextView
+                    android:id="@+id/moduleStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:layout_marginTop="6dp"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+=======
                     android:layout_marginTop="14dp"
                     app:cardBackgroundColor="?attr/colorSurface"
                     app:cardCornerRadius="28dp"
@@ -181,11 +210,44 @@
                             android:text="@string/open_accessibility_settings" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+>>>>>>> main
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/wizardModulesCard"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openAccessibilitySettingsButton"
+                    style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:layout_marginTop="14dp"
+                    android:text="@string/open_accessibility_settings" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/modules_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+=======
                     android:layout_marginTop="12dp"
                     android:visibility="gone"
                     app:cardBackgroundColor="?attr/colorSurface"
@@ -302,10 +364,22 @@
                     app:cardCornerRadius="24dp"
                     app:strokeColor="?attr/colorOutlineVariant"
                     app:strokeWidth="1dp">
+>>>>>>> main
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                        android:layout_weight="1"
+                        android:text="@string/module_overlay_label"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/overlaySwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+=======
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -338,10 +412,23 @@
                             android:text="@string/xiaomi_battery_btn" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+>>>>>>> main
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/module_shortcuts_label"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+=======
                     android:layout_marginTop="14dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
@@ -358,21 +445,31 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:layout_weight="1" />
+>>>>>>> main
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/wizardNextButton"
-                        style="@style/Widget.Material3.Button"
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/shortcutsSwitch"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/action_continue" />
+                        android:layout_height="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/xiaomiCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp">
 
             <LinearLayout
-                android:id="@+id/settingsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                android:padding="16dp">
+=======
                 android:visibility="gone">
 
                 <TextView
@@ -382,11 +479,38 @@
                     android:text="@string/settings_eyebrow"
                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                     android:textColor="@color/primary" />
+>>>>>>> main
 
                 <TextView
-                    android:id="@+id/settingsIntroText"
+                    android:id="@+id/xiaomiTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+                    android:text="@string/xiaomi_optimization_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openAutostartButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/xiaomi_autostart_btn" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openOtherPermissionsButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/xiaomi_popup_btn" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openBatteryOptimizationButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/xiaomi_battery_btn" />
+=======
                     android:layout_marginTop="8dp"
                     android:text="@string/settings_intro"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
@@ -577,8 +701,22 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="@string/restart_setup" />
+>>>>>>> main
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
+<<<<<<< codex/remove-and-rebuild-borderline-ui-2026-04-23
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/restartSetupButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/restart_setup" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
+=======
             <TextView
                 android:id="@+id/footerText"
                 android:layout_width="match_parent"
@@ -592,3 +730,4 @@
     </androidx.core.widget.NestedScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+>>>>>>> main
