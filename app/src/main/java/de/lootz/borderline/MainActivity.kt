@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appUiPrefs: AppUiPrefs
 
     private var suppressSwitchCallbacks = false
-    private var setupDialog: AlertDialog? = null
+    private var setupDialog: androidx.appcompat.app.AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity() {
         fun showStep(step: SetupStep) {
             val view = buildStepView(step)
             setupDialog?.dismiss()
-            setupDialog = AlertDialog.Builder(this)
+            setupDialog = androidx.appcompat.app.AlertDialog.Builder(this)
                 .setView(view)
                 .setNegativeButton(
                     if (currentStep == 0) getString(R.string.action_skip) else getString(R.string.action_back)
