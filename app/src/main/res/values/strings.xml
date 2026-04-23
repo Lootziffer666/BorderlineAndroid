@@ -80,4 +80,21 @@
 
     <!-- Footer -->
     <string name="limits_desc">Borderline arbeitet innerhalb der Android-Grenzen: keine Wunderautomatisierung, keine versteckte Fremdsteuerung, kein Hokuspokus ohne Rechte.</string>
+
+    <string name="control_center_title">Borderline Control Center</string>
+    <string name="control_center_subtitle">UI neu aufgebaut: Setup via Dialog, Alltag via schlankes Control Center.</string>
+    <string name="setup_dialog_title">Setup %1$d / %2$d</string>
+    <string name="action_skip">Überspringen</string>
+
+    <string name="onboarding_welcome_title">Willkommen bei Borderline</string>
+    <string name="onboarding_welcome_body">Borderline lebt als Overlay über anderen Apps. Dieses kurze Setup führt dich durch Rechte, Gesten und Module.</string>
+    <string name="onboarding_permissions_title">Berechtigungen</string>
+    <string name="onboarding_permissions_body">Wenn Accessibility fehlt, öffne direkt die Systemeinstellungen und aktiviere Borderline.</string>
+    <string name="onboarding_permission_accessibility">Accessibility Service aktiviert</string>
+    <string name="onboarding_permission_overlay">Overlay-Modul aktiviert</string>
+    <string name="onboarding_quickstart_title">Quick Start</string>
+    <string name="onboarding_quickstart_body">Wische links für Snippets, rechts für Clipper. Tippen funktioniert als Fallback, Long-Press deaktiviert das Overlay.</string>
+    <string name="onboarding_customize_title">Anpassen</string>
+    <string name="onboarding_customize_body">Aktiviere genau die Module, die du im Alltag wirklich brauchst.</string>
+
 </resources>
