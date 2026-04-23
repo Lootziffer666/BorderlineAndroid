@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:text="@string/control_center_title"
             android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-            android:textColor="?attr/colorOnSurface" />
+            android:textColor="?attr/colorOnSurf
 
         <TextView
             android:id="@+id/sublineText"
@@ -209,6 +209,36 @@
                     android:layout_height="wrap_content"
                     android:text="@string/xiaomi_optimization_title"
                     android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/xiaomiTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/xiaomi_optimization_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openAutostartButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/xiaomi_autostart_btn" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openOtherPermissionsButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/xiaomi_popup_btn" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/openBatteryOptimizationButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/xiaomi_battery_btn" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/openAutostartButton"
@@ -243,37 +273,8 @@
             android:text="@string/restart_setup" />
 
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/xiaomiTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_optimization_title"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/openAutostartButton"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/xiaomi_autostart_btn" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/openOtherPermissionsButton"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_popup_btn" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/openBatteryOptimizationButton"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/xiaomi_battery_btn" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
